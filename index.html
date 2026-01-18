@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Slots 🎰</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="balance-container">
+                <div class="balance">
+                    <i class="fas fa-star"></i>
+                    <span id="balance">0</span>
+                </div>
+                <button class="btn-add" id="addCoins">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="logo">
+                <h1><span class="logo-gradient">🎰 Emoji Slots</span></h1>
+                <p class="subtitle">Крути и выигрывай звёзды!</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <i class="fas fa-trophy"></i>
+                    <span id="jackpots">0</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="slots-container">
+                <div class="slots-machine">
+                    <div class="slots-window">
+                        <div class="reel-container">
+                            <div class="reel" id="reel1"></div>
+                        </div>
+                        <div class="reel-container">
+                            <div class="reel" id="reel2"></div>
+                        </div>
+                        <div class="reel-container">
+                            <div class="reel" id="reel3"></div>
+                        </div>
+                        <div class="slots-frame"></div>
+                    </div>
+                </div>
+                
+                <div class="control-panel">
+                    <button class="btn-spin" id="spinButton">
+                        <i class="fas fa-play"></i>
+                        <span>КРУТИТЬ</span>
+                    </button>
+                    
+                    <div class="win-display" id="winDisplay">
+                        <span>Выигрыш: </span>
+                        <span id="winAmount">0</span>
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h3><i class="fas fa-info-circle"></i> Таблица выигрышей</h3>
+                
+                <div class="wins-section">
+                    <h4><i class="fas fa-crown"></i> 3 одинаковых символа</h4>
+                    <div class="wins-table">
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🎰</span><span>🎰</span><span>🎰</span>
+                            </div>
+                            <div class="combo-prize">1000 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>💎</span><span>💎</span><span>💎</span>
+                            </div>
+                            <div class="combo-prize">500 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🔔</span><span>🔔</span><span>🔔</span>
+                            </div>
+                            <div class="combo-prize">200 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>⭐</span><span>⭐</span><span>⭐</span>
+                            </div>
+                            <div class="combo-prize">100 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍉</span><span>🍉</span><span>🍉</span>
+                            </div>
+                            <div class="combo-prize">50 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍊</span><span>🍊</span><span>🍊</span>
+                            </div>
+                            <div class="combo-prize">30 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍋</span><span>🍋</span><span>🍋</span>
+                            </div>
+                            <div class="combo-prize">20 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍒</span><span>🍒</span><span>🍒</span>
+                            </div>
+                            <div class="combo-prize">10 ⭐</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="wins-section">
+                    <h4><i class="fas fa-star"></i> 2 одинаковых символа</h4>
+                    <div class="wins-table wins-table-double">
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🎰</span><span>🎰</span>
+                            </div>
+                            <div class="combo-prize">50 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>💎</span><span>💎</span>
+                            </div>
+                            <div class="combo-prize">40 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🔔</span><span>🔔</span>
+                            </div>
+                            <div class="combo-prize">30 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>⭐</span><span>⭐</span>
+                            </div>
+                            <div class="combo-prize">25 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍉</span><span>🍉</span>
+                            </div>
+                            <div class="combo-prize">20 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍊</span><span>🍊</span>
+                            </div>
+                            <div class="combo-prize">15 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍋</span><span>🍋</span>
+                            </div>
+                            <div class="combo-prize">10 ⭐</div>
+                        </div>
+                        <div class="win-combination">
+                            <div class="combo-symbols">
+                                <span>🍒</span><span>🍒</span>
+                            </div>
+                            <div class="combo-prize">5 ⭐</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-info">
+                    <div class="stat-item">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Всего спинов: <span id="totalSpins">0</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-trophy"></i>
+                        <span>Побед: <span id="totalWins">0</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-percentage"></i>
+                        <span>Шанс на победу: ~25%</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="notification" id="notification">
+            <span id="notificationText"></span>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
