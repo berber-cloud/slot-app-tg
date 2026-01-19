@@ -1,4 +1,3 @@
-// netlify/functions/user-gifts.js
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -14,11 +13,7 @@ exports.handler = async (event, context) => {
     };
 
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: 'CORS preflight' })
-        };
+        return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
     }
 
     try {
@@ -30,9 +25,14 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const { userId } = event.pathParameters || {};
+        // Получаем ID из query параметров
+        const query = event.queryStringParameters || {};
+        const userId = query.userId || query.id;
+        
         const body = JSON.parse(event.body || '{}');
         const { gift_id } = body;
+
+        console.log('🎁 user-gifts вызван:', { userId, gift_id });
 
         if (!userId || !gift_id) {
             return {
@@ -45,13 +45,68 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Проверяем, не куплен ли уже подарок
-        const { data: existingGift } = await supabase
-            .from('gifts')
+        // Ищем пользователя по telegram_id или UUID
+        let user = null;
+
+        // Сначала по telegram_id
+        const { data: userByTelegram, error: error1 } = await supabase
+            .from('users')
             .select('*')
-            .eq('user_id', userId)
-            .eq('gift_id', gift_id)
+            .eq('telegram_id', userId)
             .single();
+
+        // Если не нашли, по id (UUID)
+        if (error1 && error1.code === 'PGRST116') {
+            console.log('Не найден по telegram_id, пробуем по UUID...');
+            const { data: userById, error: error2 } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+            
+            if (error2) {
+                console.error('❌ Пользователь не найден:', error2.message);
+                return {
+                    statusCode: 404,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: false, 
+                        error: 'Пользователь не найден' 
+                    })
+                };
+            }
+            user = userById;
+        } else if (error1) {
+            throw error1;
+        } else {
+            user = userByTelegram;
+        }
+
+        if (!user) {
+            return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ 
+                    success: false, 
+                    error: 'Пользователь не найден' 
+                })
+            };
+        }
+
+        console.log('👤 Найден пользователь для покупки подарка:', { 
+            id: user.id, 
+            telegram_id: user.telegram_id 
+        });
+
+        // Проверяем, не куплен ли уже подарок
+        const { data: existingGift, error: checkError } = await supabase
+            .from('gifts')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('gift_id', gift_id)
+            .maybeSingle();
+
+        if (checkError && checkError.code !== 'PGRST116') throw checkError;
 
         if (existingGift) {
             return {
@@ -68,7 +123,7 @@ exports.handler = async (event, context) => {
         const { data: gift, error: giftError } = await supabase
             .from('gifts')
             .insert([{
-                user_id: userId,
+                user_id: user.id,
                 gift_id: gift_id,
                 purchased_at: new Date().toISOString()
             }])
@@ -81,7 +136,9 @@ exports.handler = async (event, context) => {
         await supabase
             .from('users')
             .update({ updated_at: new Date().toISOString() })
-            .eq('id', userId);
+            .eq('id', user.id);
+
+        console.log('✅ Подарок добавлен:', gift);
 
         return {
             statusCode: 200,

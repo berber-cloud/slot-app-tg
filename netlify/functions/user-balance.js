@@ -13,11 +13,7 @@ exports.handler = async (event, context) => {
     };
 
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: 'CORS preflight' })
-        };
+        return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
     }
 
     try {
@@ -29,9 +25,14 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const { userId } = event.pathParameters || {};
+        // Получаем ID из query параметров
+        const query = event.queryStringParameters || {};
+        const userId = query.userId || query.id;
+        
         const body = JSON.parse(event.body || '{}');
         const { stars = 0, coins = 0 } = body;
+
+        console.log('💰 user-balance вызван:', { userId, stars, coins });
 
         if (!userId) {
             return {
@@ -44,14 +45,42 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Получаем текущего пользователя
-        const { data: user, error: userError } = await supabase
+        // Ищем пользователя по telegram_id или UUID
+        let user = null;
+
+        // Сначала по telegram_id
+        const { data: userByTelegram, error: error1 } = await supabase
             .from('users')
             .select('*')
-            .eq('id', userId)
+            .eq('telegram_id', userId)
             .single();
 
-        if (userError) throw userError;
+        // Если не нашли, по id (UUID)
+        if (error1 && error1.code === 'PGRST116') {
+            console.log('Не найден по telegram_id, пробуем по UUID...');
+            const { data: userById, error: error2 } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+            
+            if (error2) {
+                console.error('❌ Пользователь не найден:', error2.message);
+                return {
+                    statusCode: 404,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: false, 
+                        error: 'Пользователь не найден' 
+                    })
+                };
+            }
+            user = userById;
+        } else if (error1) {
+            throw error1;
+        } else {
+            user = userByTelegram;
+        }
 
         if (!user) {
             return {
@@ -64,9 +93,16 @@ exports.handler = async (event, context) => {
             };
         }
 
+        console.log('👤 Найден пользователь для обновления баланса:', { 
+            id: user.id, 
+            telegram_id: user.telegram_id,
+            current_balance: user.balance,
+            current_coins: user.coins
+        });
+
         // Обновляем баланс
-        const newBalance = Math.max(0, user.balance + stars);
-        const newCoins = Math.max(0, user.coins + coins);
+        const newBalance = Math.max(0, (user.balance || 0) + stars);
+        const newCoins = Math.max(0, (user.coins || 0) + coins);
 
         const { data: updatedUser, error: updateError } = await supabase
             .from('users')
@@ -75,7 +111,7 @@ exports.handler = async (event, context) => {
                 coins: newCoins,
                 updated_at: new Date().toISOString()
             })
-            .eq('id', userId)
+            .eq('id', user.id)
             .select()
             .single();
 
@@ -84,23 +120,29 @@ exports.handler = async (event, context) => {
         // Логируем транзакцию
         if (stars !== 0) {
             await supabase.from('transactions').insert([{
-                user_id: userId,
+                user_id: user.id,
                 type: stars > 0 ? 'deposit' : 'withdraw',
                 amount: Math.abs(stars),
                 currency: 'stars',
-                status: 'completed'
+                status: 'completed',
+                description: stars > 0 ? 'Пополнение баланса' : 'Списание за спин'
             }]);
         }
 
         if (coins !== 0) {
             await supabase.from('transactions').insert([{
-                user_id: userId,
+                user_id: user.id,
                 type: coins > 0 ? 'deposit' : 'withdraw',
                 amount: Math.abs(coins),
                 currency: 'coins',
                 status: 'completed'
             }]);
         }
+
+        console.log('✅ Баланс обновлен:', { 
+            new_balance: newBalance, 
+            new_coins: newCoins 
+        });
 
         return {
             statusCode: 200,

@@ -314,7 +314,7 @@ function spinReel(reel, finalSymbol, delay = 0) {
 }
 
 async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncrement = 0) {
-    console.log('Обновление статистики:', { spinIncrement, winIncrement, jackpotIncrement });
+    console.log('📊 Обновление статистики:', { spinIncrement, winIncrement, jackpotIncrement });
     
     // 1. Обновляем локальную статистику
     state.spinCount += spinIncrement;
@@ -331,10 +331,13 @@ async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncre
             const user = Api.getCurrentUser();
             
             if (user && user.id) {
-                // ВАЖНО: передаем ТОЛЬКО UUID, не telegram_id!
-                console.log('Обновление статистики для пользователя UUID:', user.id);
-                console.log('Telegram ID пользователя:', user.telegram_id);
+                console.log('👤 Пользователь для обновления:', {
+                    id: user.id,
+                    telegram_id: user.telegram_id,
+                    username: user.username
+                });
                 
+                // Передаем UUID пользователя
                 const result = await Api.updateStats(
                     user.id, // ТОЛЬКО UUID!
                     spinIncrement, 
@@ -342,14 +345,24 @@ async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncre
                     jackpotIncrement
                 );
                 
+                console.log('📥 Результат обновления статистики:', result);
+                
                 if (result.success) {
                     console.log('✅ Статистика обновлена в БД');
+                    // Синхронизируем с ответом сервера
+                    if (result.user) {
+                        state.spinCount = result.user.spin_count || state.spinCount;
+                        state.winCount = result.user.win_count || state.winCount;
+                        state.jackpots = result.user.jackpots || state.jackpots;
+                        saveGameState();
+                        updateUI();
+                    }
                 } else {
                     console.error('❌ Ошибка обновления статистики:', result.error);
                 }
             } else {
                 console.log('⚠️ Пользователь не найден или нет UUID');
-                console.log('Текущий user object:', user);
+                console.log('Текущий user:', user);
             }
         }
     } catch (error) {

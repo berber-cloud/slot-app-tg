@@ -17,71 +17,43 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        // ВАЖНО: Получаем ID из пути - разные способы для Netlify
-        let userId = null;
+        // Получаем ID из query параметров
+        const query = event.queryStringParameters || {};
+        const userId = query.id || query.userId || query.telegramId;
         
-        // Способ 1: Из pathParameters (обычный способ)
-        if (event.pathParameters && event.pathParameters.telegramId) {
-            userId = event.pathParameters.telegramId;
-        }
-        // Способ 2: Из queryStringParameters (через ?id=...)
-        else if (event.queryStringParameters && event.queryStringParameters.id) {
-            userId = event.queryStringParameters.id;
-        }
-        // Способ 3: Из самого пути (вручную парсим)
-        else if (event.path) {
-            // Пример пути: /.netlify/functions/user-get/5962149453
-            const pathParts = event.path.split('/');
-            userId = pathParts[pathParts.length - 1];
-            
-            // Если это не ID (например, "user-get"), то пробуем предпоследнюю часть
-            if (userId === 'user-get' && pathParts.length > 3) {
-                userId = pathParts[pathParts.length - 2];
-            }
-        }
-
-        console.log('🔍 user-get вызван. Путь:', event.path);
+        console.log('🔍 user-get вызван. Query:', query);
         console.log('🔍 Полученный ID:', userId);
-        console.log('🔍 Все параметры:', {
-            path: event.path,
-            pathParameters: event.pathParameters,
-            queryStringParameters: event.queryStringParameters,
-            rawPath: event.rawPath
-        });
 
-        if (!userId || userId === 'user-get') {
+        if (!userId) {
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ 
                     success: false, 
                     error: 'ID is required',
-                    hint: 'Используйте: /api/user-get/YOUR_ID'
+                    hint: 'Используйте: /api/user-get?id=YOUR_ID'
                 })
             };
         }
 
-        // ДАЛЕЕ ВАШ КОД ПОИСКА ПОЛЬЗОВАТЕЛЯ...
-        // [оставьте весь остальной код без изменений]
-
-        // Пробуем найти пользователя разными способами
+        // Поиск пользователя по telegram_id или UUID
         let user = null;
         let error = null;
 
-        // Сначала пробуем найти по telegram_id (как число/строка)
-        let { data: userByTelegram, error: error1 } = await supabase
+        // Сначала ищем по telegram_id
+        const { data: userByTelegram, error: error1 } = await supabase
             .from('users')
             .select('*')
-            .eq('telegram_id', telegramId)
+            .eq('telegram_id', userId)
             .single();
 
-        // Если не нашли по telegram_id, пробуем по id (UUID)
+        // Если не нашли, ищем по id (UUID)
         if (error1 && error1.code === 'PGRST116') {
             console.log('Не найден по telegram_id, пробуем по UUID...');
             const { data: userById, error: error2 } = await supabase
                 .from('users')
                 .select('*')
-                .eq('id', telegramId)  // Здесь telegramId на самом деле может быть UUID
+                .eq('id', userId)
                 .single();
             
             if (error2) {
@@ -107,23 +79,41 @@ exports.handler = async (event, context) => {
             };
         }
 
-        if (user) {
-            console.log('✅ Пользователь найден:', { id: user.id, telegram_id: user.telegram_id });
-            
-            // Получаем подарки пользователя
-            const { data: gifts } = await supabase
-                .from('gifts')
-                .select('*')
-                .eq('user_id', user.id);
-            
-            user.gifts = gifts || [];
-
+        if (!user) {
             return {
-                statusCode: 200,
+                statusCode: 404,
                 headers,
-                body: JSON.stringify({ success: true, user })
+                body: JSON.stringify({ 
+                    success: false, 
+                    error: 'Пользователь не найден' 
+                })
             };
         }
+
+        console.log('✅ Пользователь найден:', { 
+            id: user.id, 
+            telegram_id: user.telegram_id,
+            username: user.username 
+        });
+
+        // Получаем подарки пользователя
+        const { data: gifts, error: giftsError } = await supabase
+            .from('gifts')
+            .select('id, gift_id, purchased_at')
+            .eq('user_id', user.id);
+
+        if (giftsError) {
+            console.error('Ошибка загрузки подарков:', giftsError);
+            user.gifts = [];
+        } else {
+            user.gifts = gifts || [];
+        }
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ success: true, user })
+        };
 
     } catch (error) {
         console.error('💥 Ошибка в user-get:', error);

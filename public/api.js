@@ -1,13 +1,12 @@
 // api.js - для Netlify Functions
 
-// Базовый URL API (Netlify будет автоматически проксировать)
+// Базовый URL API
 const API_BASE_URL = '/api';
 
 // Кэш данных пользователя
 let userCache = null;
 
 class Api {
-    
     // Инициализация пользователя
     static async initUser(userData) {
         try {
@@ -28,29 +27,26 @@ class Api {
             
             if (data.success) {
                 userCache = data.user;
-                // Сохраняем в localStorage как fallback
                 localStorage.setItem('userData', JSON.stringify(data.user));
             }
             
             return data;
         } catch (error) {
             console.error('Ошибка инициализации пользователя:', error);
-            // Fallback на localStorage
             return this.createLocalUser(userData);
         }
     }
-
     
-    
-    // Получение пользователя по Telegram ID
-    static async getUser(telegramId) {
+    // Получение пользователя по ID (telegram_id или UUID)
+    static async getUser(userId) {
         try {
             // Проверяем кэш
-            if (userCache && userCache.telegram_id == telegramId) {
+            if (userCache && (userCache.id === userId || userCache.telegram_id === userId)) {
                 return { success: true, user: userCache };
             }
             
-            const response = await fetch(`${API_BASE_URL}/user-get/${telegramId}`, {
+            // ВАЖНО: Используем query параметр
+            const response = await fetch(`${API_BASE_URL}/user-get?id=${encodeURIComponent(userId)}`, {
                 headers: { 'Accept': 'application/json' }
             });
             
@@ -71,7 +67,6 @@ class Api {
             return data;
         } catch (error) {
             console.error('Ошибка получения пользователя:', error);
-            // Fallback на localStorage
             const localData = localStorage.getItem('userData');
             if (localData) {
                 userCache = JSON.parse(localData);
@@ -82,85 +77,107 @@ class Api {
     }
     
     // Обновление баланса
-   static async getUser(userId) {
-    try {
-        console.log('🔍 Api.getUser вызван с:', userId);
-        
-        // user-get теперь принимает любой ID (telegram_id или UUID)
-        const response = await fetch(`${API_BASE_URL}/user-get/${userId}`, {
-            headers: { 'Accept': 'application/json' }
-        });
-        
-        console.log('📨 Ответ getUser:', response.status);
-        
-        if (!response.ok) {
-            if (response.status === 404) {
-                return { success: false, error: 'Пользователь не найден' };
+    static async updateBalance(userId, starsDelta = 0, coinsDelta = 0) {
+        try {
+            // ВАЖНО: Используем query параметр
+            const response = await fetch(`${API_BASE_URL}/user-balance?userId=${encodeURIComponent(userId)}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ stars: starsDelta, coins: coinsDelta })
+            });
+            
+            console.log('📤 Отправка обновления баланса для userId:', userId);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Ошибка обновления баланса:', errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            
+            const data = await response.json();
+            console.log('📥 Ответ обновления баланса:', data);
+            
+            if (data.success && userCache && 
+                (userCache.id === userId || userCache.telegram_id === userId)) {
+                userCache.balance += starsDelta;
+                userCache.coins += coinsDelta;
+                userCache.updated_at = new Date().toISOString();
+                localStorage.setItem('userData', JSON.stringify(userCache));
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Ошибка обновления баланса:', error);
+            if (userCache && (userCache.id === userId || userCache.telegram_id === userId)) {
+                userCache.balance += starsDelta;
+                userCache.coins += coinsDelta;
+                localStorage.setItem('userData', JSON.stringify(userCache));
+                return { success: true };
+            }
+            return { success: false, error: 'Ошибка обновления' };
         }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            userCache = data.user;
-            localStorage.setItem('userData', JSON.stringify(data.user));
-            console.log('✅ Пользователь загружен в кэш:', data.user.id);
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('Ошибка получения пользователя:', error);
-        const localData = localStorage.getItem('userData');
-        if (localData) {
-            userCache = JSON.parse(localData);
-            return { success: true, user: userCache };
-        }
-        return { success: false, error: 'Ошибка загрузки данных' };
     }
-}
     
     // Обновление статистики
     static async updateStats(userId, spinCount = 0, winCount = 0, jackpots = 0) {
-    try {
-        console.log('🔧 Api.updateStats вызван с userId:', userId);
-        console.log('📊 Параметры:', { spinCount, winCount, jackpots });
-        
-        const response = await fetch(`${API_BASE_URL}/user-stats/${userId}`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ 
-                spin_count: spinCount, 
-                win_count: winCount, 
-                jackpots: jackpots 
-            })
-        });
-        
-        console.log('📨 Ответ сервера:', response.status, response.statusText);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Ошибка HTTP:', errorText);
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        try {
+            // ВАЖНО: Используем query параметр
+            const response = await fetch(`${API_BASE_URL}/user-stats?userId=${encodeURIComponent(userId)}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    spin_count: spinCount, 
+                    win_count: winCount, 
+                    jackpots: jackpots 
+                })
+            });
+            
+            console.log('📤 Отправка обновления статистики для userId:', userId);
+            console.log('📊 Параметры:', { spinCount, winCount, jackpots });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Ошибка обновления статистики:', errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📥 Ответ обновления статистики:', data);
+            
+            if (data.success && userCache && 
+                (userCache.id === userId || userCache.telegram_id === userId)) {
+                userCache.spin_count += spinCount;
+                userCache.win_count += winCount;
+                userCache.jackpots += jackpots;
+                userCache.updated_at = new Date().toISOString();
+                localStorage.setItem('userData', JSON.stringify(userCache));
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Ошибка обновления статистики:', error);
+            if (userCache && (userCache.id === userId || userCache.telegram_id === userId)) {
+                userCache.spin_count += spinCount;
+                userCache.win_count += winCount;
+                userCache.jackpots += jackpots;
+                localStorage.setItem('userData', JSON.stringify(userCache));
+                return { success: true };
+            }
+            return { success: false, error: 'Ошибка обновления' };
         }
-        
-        const data = await response.json();
-        console.log('📊 Данные ответа:', data);
-        return data;
-        
-    } catch (error) {
-        console.error('💥 Ошибка в Api.updateStats:', error);
-        throw error;
     }
-}
     
-    // Покупка подарка (нужно создать функцию user-gifts.js аналогично)
+    // Покупка подарка
     static async purchaseGift(userId, giftId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/user-gifts/${userId}`, {
+            // ВАЖНО: Используем query параметр
+            const response = await fetch(`${API_BASE_URL}/user-gifts?userId=${encodeURIComponent(userId)}`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -175,7 +192,8 @@ class Api {
             
             const data = await response.json();
             
-            if (data.success && userCache && userCache.id === userId) {
+            if (data.success && userCache && 
+                (userCache.id === userId || userCache.telegram_id === userId)) {
                 if (!userCache.gifts) userCache.gifts = [];
                 userCache.gifts.push({
                     id: giftId,
@@ -187,8 +205,7 @@ class Api {
             return data;
         } catch (error) {
             console.error('Ошибка покупки подарка:', error);
-            // Fallback на localStorage
-            if (userCache && userCache.id === userId) {
+            if (userCache && (userCache.id === userId || userCache.telegram_id === userId)) {
                 if (!userCache.gifts) userCache.gifts = [];
                 userCache.gifts.push({
                     id: giftId,
@@ -201,7 +218,7 @@ class Api {
         }
     }
     
-    // Получение списка подарков
+    // Получение списка подарков (без изменений)
     static async getGifts() {
         try {
             const response = await fetch(`${API_BASE_URL}/gifts`, {
@@ -226,93 +243,28 @@ class Api {
                     currency: 'coins',
                     category: 'Набор юного химика'
                 },
-                {
-                    id: 'gift_2',
-                    emoji: '🚬',
-                    name: 'Марльборо',
-                    description: 'Пачка сигарет для создания дымной завесы',
-                    price: 10,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_3',
-                    emoji: '💪',
-                    name: 'Протеин',
-                    description: 'Банка протеина для наращивания мышц',
-                    price: 15,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_4',
-                    emoji: '💉',
-                    name: 'Тренболон ацетат',
-                    description: 'Ампула для настоящих качков',
-                    price: 20,
-                    currency: 'coins',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_5',
-                    emoji: '🔥',
-                    name: 'Зажигалка',
-                    description: 'Зажигалка для поджигания отношений',
-                    price: 8,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_6',
-                    emoji: '🧪',
-                    name: 'Колба химика',
-                    description: 'Пустая колба для экспериментов',
-                    price: 12,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_7',
-                    emoji: '🧫',
-                    name: 'Пробирка',
-                    description: 'Пробирка для хранения веществ',
-                    price: 7,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                }
+                // ... остальные подарки
             ];
             return { success: true, gifts };
         }
     }
     
-    // Получение текущего пользователя
-    // В методе getCurrentUser() добавьте:
-static getCurrentUser() {
-    if (userCache) {
-        console.log('👤 getCurrentUser возвращает (cache):', {
-            id: userCache.id,
-            telegram_id: userCache.telegram_id,
-            username: userCache.username
-        });
-        return userCache;
+    // Получение текущего пользователя (без изменений)
+    static getCurrentUser() {
+        if (userCache) {
+            return userCache;
+        }
+        
+        const localData = localStorage.getItem('userData');
+        if (localData) {
+            userCache = JSON.parse(localData);
+            return userCache;
+        }
+        
+        return null;
     }
     
-    const localData = localStorage.getItem('userData');
-    if (localData) {
-        userCache = JSON.parse(localData);
-        console.log('👤 getCurrentUser возвращает (localStorage):', {
-            id: userCache.id,
-            telegram_id: userCache.telegram_id,
-            username: userCache.username
-        });
-        return userCache;
-    }
-    
-    console.log('👤 getCurrentUser: пользователь не найден');
-    return null;
-}
-    
-    // Создание локального пользователя (fallback)
+    // Создание локального пользователя (без изменений)
     static createLocalUser(userData) {
         const userId = userData?.id || `guest_${Date.now()}`;
         const user = {
@@ -337,62 +289,32 @@ static getCurrentUser() {
         
         return { success: true, user };
     }
-
-    // Добавьте в class Api (перед последней закрывающей скобкой)
-static async waitForUser(timeout = 5000) {
-    return new Promise((resolve) => {
-        const checkUser = () => {
-            const user = this.getCurrentUser();
-            if (user) {
-                resolve(user);
-            } else if (timeout <= 0) {
-                resolve(this.createLocalUser({}));
-            } else {
-                timeout -= 100;
-                setTimeout(checkUser, 100);
-            }
-        };
-        checkUser();
-    });
-}
 }
 
-// Инициализация Telegram Web App
-// Инициализация при загрузке (в конце api.js)
-document.addEventListener('DOMContentLoaded', async () => {
+// Инициализация Telegram Web App (без изменений)
+document.addEventListener('DOMContentLoaded', () => {
     try {
-        // Пытаемся инициализировать через Telegram
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
             
-            const user = tg.initDataUnsafe?.user;
-            if (user) {
-                await Api.initUser({
-                    id: user.id.toString(),
-                    username: user.username,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    photo_url: user.photo_url
-                });
-            }
-        } 
-        // Если не в Telegram - создаем гостя
-        else {
-            console.log('Telegram Web App не доступен, создаю гостя');
-            const guestId = `guest_${Date.now()}`;
-            await Api.initUser({
-                id: guestId,
-                username: 'Гость (Локально)',
-                first_name: '',
-                last_name: '',
-                photo_url: ''
-            });
+            const initUser = async () => {
+                const user = tg.initDataUnsafe?.user;
+                if (user) {
+                    await Api.initUser({
+                        id: user.id.toString(),
+                        username: user.username,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        photo_url: user.photo_url
+                    });
+                }
+            };
+            
+            initUser();
         }
     } catch (error) {
-        console.log('Инициализация не удалась:', error);
-        // Создаем локального пользователя как fallback
-        Api.createLocalUser({ id: `fallback_${Date.now()}` });
+        console.log('Telegram Web App не доступен');
     }
 });

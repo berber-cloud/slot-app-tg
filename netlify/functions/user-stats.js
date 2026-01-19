@@ -13,11 +13,7 @@ exports.handler = async (event, context) => {
     };
 
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: 'CORS preflight' })
-        };
+        return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
     }
 
     try {
@@ -29,9 +25,14 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const { userId } = event.pathParameters || {};
+        // Получаем ID из query параметров
+        const query = event.queryStringParameters || {};
+        const userId = query.userId || query.id;
+        
         const body = JSON.parse(event.body || '{}');
         const { spin_count = 0, win_count = 0, jackpots = 0 } = body;
+
+        console.log('🔧 user-stats вызван:', { userId, spin_count, win_count, jackpots });
 
         if (!userId) {
             return {
@@ -39,19 +40,47 @@ exports.handler = async (event, context) => {
                 headers,
                 body: JSON.stringify({ 
                     success: false, 
-                    error: 'User ID is required' 
+                    error: 'User ID is required in query: ?userId=...' 
                 })
             };
         }
 
-        // Получаем текущего пользователя
-        const { data: user, error: userError } = await supabase
+        // Ищем пользователя по telegram_id или UUID
+        let user = null;
+
+        // Сначала по telegram_id
+        const { data: userByTelegram, error: error1 } = await supabase
             .from('users')
             .select('*')
-            .eq('id', userId)
+            .eq('telegram_id', userId)
             .single();
 
-        if (userError) throw userError;
+        // Если не нашли, по id (UUID)
+        if (error1 && error1.code === 'PGRST116') {
+            console.log('Не найден по telegram_id, пробуем по UUID...');
+            const { data: userById, error: error2 } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+            
+            if (error2) {
+                console.error('❌ Пользователь не найден:', error2.message);
+                return {
+                    statusCode: 404,
+                    headers,
+                    body: JSON.stringify({ 
+                        success: false, 
+                        error: 'Пользователь не найден' 
+                    })
+                };
+            }
+            user = userById;
+        } else if (error1) {
+            throw error1;
+        } else {
+            user = userByTelegram;
+        }
 
         if (!user) {
             return {
@@ -64,54 +93,52 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Замените весь блок после строки 55:
+        console.log('👤 Найден пользователь:', { id: user.id, telegram_id: user.telegram_id });
 
-// Обновляем статистику
-const updateData = {
-    updated_at: new Date().toISOString()
-};
+        // Обновляем статистику
+        const updateData = {
+            spin_count: (user.spin_count || 0) + spin_count,
+            win_count: (user.win_count || 0) + win_count,
+            jackpots: (user.jackpots || 0) + jackpots,
+            updated_at: new Date().toISOString()
+        };
 
-// Добавляем только те поля, которые переданы (инкрементируем)
-if (spin_count !== 0) {
-    updateData.spin_count = user.spin_count + spin_count;
-}
-if (win_count !== 0) {
-    updateData.win_count = user.win_count + win_count;
-}
-if (jackpots !== 0) {
-    updateData.jackpots = user.jackpots + jackpots;
-}
+        console.log('📝 Обновление статистики:', updateData);
 
-// Логируем что обновляем
-console.log('Updating user stats:', {
-    userId,
-    currentStats: { spin: user.spin_count, win: user.win_count, jackpots: user.jackpots },
-    increments: { spin_count, win_count, jackpots },
-    updateData
-});
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', user.id)
+            .select()
+            .single();
 
-const { data: updatedUser, error: updateError } = await supabase
-    .from('users')
-    .update(updateData)
-    //.eq('id', userId)  // Ищем по ВНУТРЕННЕМУ ID (UUID)
-    .eq('telegram_id', userId)
-    .select()
-    .single();
+        if (updateError) {
+            console.error('❌ Ошибка обновления в Supabase:', updateError);
+            throw updateError;
+        }
 
-if (updateError) {
-    console.error('Supabase update error:', updateError);
-    throw updateError;
-}
+        console.log('✅ Статистика обновлена:', updatedUser);
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ 
+                success: true, 
+                user: updatedUser,
+                message: 'Статистика обновлена' 
+            })
+        };
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('💥 Ошибка в user-stats:', error);
         
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
                 success: false, 
-                error: error.message 
+                error: error.message,
+                details: 'Internal server error' 
             })
         };
     }
