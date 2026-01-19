@@ -314,7 +314,7 @@ function spinReel(reel, finalSymbol, delay = 0) {
 }
 
 async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncrement = 0) {
-    console.log('📊 Обновление статистики:', { spinIncrement, winIncrement, jackpotIncrement });
+    console.log('🔄 updateGameStats вызван с:', { spinIncrement, winIncrement, jackpotIncrement });
     
     // 1. Обновляем локальную статистику
     state.spinCount += spinIncrement;
@@ -330,43 +330,60 @@ async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncre
         if (typeof Api !== 'undefined' && Api.updateStats) {
             const user = Api.getCurrentUser();
             
-            if (user && user.id) {
+            if (user) {
                 console.log('👤 Пользователь для обновления:', {
                     id: user.id,
                     telegram_id: user.telegram_id,
-                    username: user.username
+                    has_id: !!user.id,
+                    has_telegram_id: !!user.telegram_id
                 });
                 
-                // Передаем UUID пользователя
-                const result = await Api.updateStats(
-                    user.id, // ТОЛЬКО UUID!
-                    spinIncrement, 
-                    winIncrement, 
-                    jackpotIncrement
-                );
+                // Убедимся что есть UUID
+                if (!user.id && user.telegram_id) {
+                    console.log('⚠️ Нет UUID! Запрашиваем свежие данные...');
+                    const freshUser = await Api.getUser(user.telegram_id);
+                    if (freshUser.success) {
+                        console.log('✅ Получен UUID:', freshUser.user.id);
+                        user.id = freshUser.user.id;
+                    }
+                }
                 
-                console.log('📥 Результат обновления статистики:', result);
-                
-                if (result.success) {
-                    console.log('✅ Статистика обновлена в БД');
-                    // Синхронизируем с ответом сервера
-                    if (result.user) {
-                        state.spinCount = result.user.spin_count || state.spinCount;
-                        state.winCount = result.user.win_count || state.winCount;
-                        state.jackpots = result.user.jackpots || state.jackpots;
-                        saveGameState();
-                        updateUI();
+                if (user.id) {
+                    console.log('📤 Вызов Api.updateStats с userId:', user.id);
+                    
+                    const result = await Api.updateStats(
+                        user.id, // UUID
+                        spinIncrement, 
+                        winIncrement, 
+                        jackpotIncrement
+                    );
+                    
+                    console.log('📥 Результат Api.updateStats:', result);
+                    
+                    if (result.success) {
+                        console.log('✅ Статистика обновлена в БД');
+                        // Обновляем локальные данные из БД
+                        if (result.user) {
+                            state.spinCount = result.user.spin_count || state.spinCount;
+                            state.winCount = result.user.win_count || state.winCount;
+                            state.jackpots = result.user.jackpots || state.jackpots;
+                            saveGameState();
+                            updateUI();
+                        }
+                    } else {
+                        console.error('❌ Ошибка обновления статистики:', result.error);
                     }
                 } else {
-                    console.error('❌ Ошибка обновления статистики:', result.error);
+                    console.error('💥 Нет ID для обновления!');
                 }
             } else {
-                console.log('⚠️ Пользователь не найден или нет UUID');
-                console.log('Текущий user:', user);
+                console.log('⚠️ Пользователь не найден в Api.getCurrentUser()');
             }
+        } else {
+            console.log('⚠️ Api.updateStats не доступен');
         }
     } catch (error) {
-        console.log('API обновление не удалось:', error);
+        console.error('💥 Исключение в updateGameStats:', error);
     }
 }
 
@@ -407,23 +424,34 @@ async function spin() {
     
     updateUI();
     
-    // Вычитаем 1 звезду за спин
+    // ВЫЧИТАЕМ 1 звезду за спин
     state.balance -= 1;
     
+    console.log('🎰 НАЧАЛО СПИНА ======================');
+    console.log('💰 Баланс до спина:', state.balance + 1);
+    console.log('📊 Статистика до спина:', {
+        spinCount: state.spinCount,
+        winCount: state.winCount,
+        jackpots: state.jackpots
+    });
+    
     try {
-        // Обновляем баланс через API если доступно
+        // 1. Обновляем баланс через API
+        console.log('🔄 Шаг 1: Обновление баланса...');
         try {
             if (typeof Api !== 'undefined' && Api.updateBalance) {
                 const user = Api.getCurrentUser();
                 if (user) {
-                    await Api.updateBalance(user.id, -1, 0);
+                    console.log('👤 Пользователь для обновления баланса:', user.id);
+                    const balanceResult = await Api.updateBalance(user.id, -1, 0);
+                    console.log('✅ Результат обновления баланса:', balanceResult);
                 }
             }
         } catch (apiError) {
-            console.log('API обновление не удалось');
+            console.log('⚠️ API обновление баланса не удалось:', apiError);
         }
         
-        // Генерируем новые символы
+        // 2. Генерируем новые символы
         const newSymbols = [
             getRandomSymbol(),
             getRandomSymbol(),
@@ -431,35 +459,47 @@ async function spin() {
         ];
         
         state.currentSymbols = newSymbols;
+        console.log('🎯 Выпавшие символы:', newSymbols);
         
-        // Запускаем вращение барабанов
+        // 3. Вращение барабанов
         await Promise.all([
             spinReel(elements.reel1, newSymbols[0], 0),
             spinReel(elements.reel2, newSymbols[1], 200),
             spinReel(elements.reel3, newSymbols[2], 400)
         ]);
         
-        // Проверяем выигрыш
+        // 4. Проверяем выигрыш
         const winResult = checkWin(newSymbols);
+        console.log('🏆 Результат проверки выигрыша:', winResult);
         
         if (winResult.amount > 0) {
             state.lastWin = winResult.amount;
             state.balance += winResult.amount;
             
+            console.log('💰 Выигрыш! Сумма:', winResult.amount);
+            console.log('💰 Новый баланс:', state.balance);
+            
             // Обновляем статистику - ВЫИГРЫШ
             const jackpotIncrement = (winResult.type === 'triple' && newSymbols[0] === '🎰') ? 1 : 0;
+            console.log('📊 Обновление статистики (ВЫИГРЫШ):', {
+                spinIncrement: 1,
+                winIncrement: 1,
+                jackpotIncrement: jackpotIncrement
+            });
+            
             await updateGameStats(1, 1, jackpotIncrement); // spinCount +1, winCount +1
             
-            // Обновляем баланс через API
+            // Обновляем баланс через API для выигрыша
             try {
                 if (typeof Api !== 'undefined' && Api.updateBalance) {
                     const user = Api.getCurrentUser();
                     if (user) {
+                        console.log('➕ Обновление баланса на выигрыш:', winResult.amount);
                         await Api.updateBalance(user.id, winResult.amount, 0);
                     }
                 }
             } catch (apiError) {
-                console.log('API обновление выигрыша не удалось');
+                console.log('⚠️ API обновление выигрыша не удалось');
             }
             
             // Уведомление
@@ -471,21 +511,21 @@ async function spin() {
                 showNotification(`🎯 Два одинаковых! +${winResult.amount} звёзд!`, 3000);
             }
             
-            // Анимация выигрыша
-            if (elements.winDisplay) {
-                elements.winDisplay.classList.add('win-animation');
-                setTimeout(() => {
-                    elements.winDisplay.classList.remove('win-animation');
-                }, 1500);
-            }
         } else {
-            // Проигрыш - обновляем только счетчик спинов
-            await updateGameStats(1, 0, 0); // spinCount +1
+            // ПРОИГРЫШ - обновляем только счетчик спинов
+            console.log('😞 Проигрыш');
+            console.log('📊 Обновление статистики (ПРОИГРЫШ):', {
+                spinIncrement: 1,
+                winIncrement: 0,
+                jackpotIncrement: 0
+            });
+            
+            await updateGameStats(1, 0, 0); // ТОЛЬКО spinCount +1
             showNotification('Повезёт в следующий раз!', 2000);
         }
         
     } catch (error) {
-        console.error('Ошибка вращения:', error);
+        console.error('💥 Ошибка вращения:', error);
         showNotification('Ошибка вращения', 2000);
     } finally {
         // Сбрасываем состояние
@@ -494,6 +534,13 @@ async function spin() {
         if (elements.spinButton) {
             elements.spinButton.disabled = false;
         }
+        
+        console.log('🎰 КОНЕЦ СПИНА ======================');
+        console.log('📊 Итоговая статистика:', {
+            spinCount: state.spinCount,
+            winCount: state.winCount,
+            jackpots: state.jackpots
+        });
         
         updateUI();
         saveGameState();
