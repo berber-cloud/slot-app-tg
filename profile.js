@@ -1,5 +1,4 @@
-// profile.js - Исправленная версия для загрузки статистики
-
+// profile.js - Исправленная версия
 const elements = {
     balance: document.getElementById('balance'),
     coins: document.getElementById('coins'),
@@ -34,54 +33,60 @@ async function init() {
 
 async function loadUserData() {
     try {
-        // Пытаемся загрузить из API
+        // Сначала пробуем загрузить из localStorage
+        const localState = localStorage.getItem('gameState');
+        if (localState) {
+            const gameState = JSON.parse(localState);
+            updateUIFromGameState(gameState);
+        }
+        
+        // Затем пробуем загрузить из API
         if (typeof Api !== 'undefined' && Api.getCurrentUser) {
             const user = Api.getCurrentUser();
             if (user) {
                 updateUIFromUser(user);
-                return;
+                
+                // Синхронизируем с локальными данными
+                const localStats = {
+                    spinCount: user.spin_count || 0,
+                    winCount: user.win_count || 0,
+                    jackpots: user.jackpots || 0
+                };
+                
+                // Сохраняем для единообразия
+                localStorage.setItem('userStats', JSON.stringify(localStats));
             }
         }
-        
-        // Если API не работает, пробуем загрузить из localStorage
-        const localData = localStorage.getItem('userData');
-        if (localData) {
-            const user = JSON.parse(localData);
-            updateUIFromUser(user);
-        } else {
-            // Если вообще нет данных, создаем гостя
-            console.log('Нет данных пользователя, создаем гостя');
-        }
     } catch (error) {
-        console.error('Ошибка загрузки данных пользователя:', error);
+        console.error('Ошибка загрузки данных:', error);
+    }
+}
+
+function updateUIFromGameState(gameState) {
+    if (!gameState) return;
+    
+    if (elements.balance) elements.balance.textContent = gameState.balance || 0;
+    if (elements.coins) elements.coins.textContent = gameState.coins || 0;
+    if (elements.totalSpins) elements.totalSpins.textContent = gameState.spinCount || 0;
+    if (elements.totalWins) elements.totalWins.textContent = gameState.winCount || 0;
+    if (elements.jackpots) elements.jackpots.textContent = gameState.jackpots || 0;
+    
+    if (elements.winRate) {
+        const spins = gameState.spinCount || 0;
+        const wins = gameState.winCount || 0;
+        const winRate = spins > 0 ? Math.round((wins / spins) * 100) : 0;
+        elements.winRate.textContent = `${winRate}%`;
     }
 }
 
 function updateUIFromUser(user) {
-    console.log('Обновление UI пользователя:', user);
+    if (!user) return;
     
     // Баланс
     if (elements.balance) elements.balance.textContent = user.balance || 0;
     if (elements.coins) elements.coins.textContent = user.coins || 0;
-    if (elements.totalGifts) elements.totalGifts.textContent = user.gifts ? user.gifts.length : 0;
     
-    // Информация о пользователе
-    if (elements.userName) {
-        elements.userName.textContent = user.username || 'Гость';
-    }
-    
-    if (elements.userId) {
-        elements.userId.textContent = `ID: ${user.id || 'Неизвестен'}`;
-    }
-    
-    if (elements.joinDate && user.join_date) {
-        const date = new Date(user.join_date);
-        elements.joinDate.textContent = date.toLocaleDateString('ru-RU');
-    } else if (elements.joinDate) {
-        elements.joinDate.textContent = 'Сегодня';
-    }
-    
-    // Статистика игры - ВАЖНО: используем разные названия полей
+    // Статистика
     if (elements.totalSpins) {
         elements.totalSpins.textContent = user.spin_count || user.spinCount || 0;
     }
@@ -101,6 +106,22 @@ function updateUIFromUser(user) {
         elements.winRate.textContent = `${winRate}%`;
     }
     
+    // Информация о пользователе
+    if (elements.userName) {
+        elements.userName.textContent = user.username || 'Гость';
+    }
+    
+    if (elements.userId) {
+        elements.userId.textContent = `ID: ${user.id || 'Неизвестен'}`;
+    }
+    
+    if (elements.joinDate && user.join_date) {
+        const date = new Date(user.join_date);
+        elements.joinDate.textContent = date.toLocaleDateString('ru-RU');
+    } else if (elements.joinDate) {
+        elements.joinDate.textContent = 'Сегодня';
+    }
+    
     // Аватар
     if (user.photo_url && elements.userAvatar) {
         elements.userAvatar.innerHTML = `<img src="${user.photo_url}" alt="Аватар" style="width:100%;height:100%;border-radius:50%;">`;
@@ -116,73 +137,6 @@ async function loadGifts() {
             if (result.success) {
                 giftsList = result.gifts;
             }
-        } else {
-            // Статический список подарков
-            giftsList = [
-                {
-                    id: 'gift_1',
-                    emoji: '🥃',
-                    name: 'Пузырь самогона',
-                    description: '50 грамм (рюмка) самогона для настоящих мужчин',
-                    price: 5,
-                    currency: 'coins',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_2',
-                    emoji: '🚬',
-                    name: 'Марльборо',
-                    description: 'Пачка сигарет для создания дымной завесы',
-                    price: 10,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_3',
-                    emoji: '💪',
-                    name: 'Протеин',
-                    description: 'Банка протеина для наращивания мышц',
-                    price: 15,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_4',
-                    emoji: '💉',
-                    name: 'Тренболон ацетат',
-                    description: 'Ампула для настоящих качков',
-                    price: 20,
-                    currency: 'coins',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_5',
-                    emoji: '🔥',
-                    name: 'Зажигалка',
-                    description: 'Зажигалка для поджигания отношений',
-                    price: 8,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_6',
-                    emoji: '🧪',
-                    name: 'Колба химика',
-                    description: 'Пустая колба для экспериментов',
-                    price: 12,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                },
-                {
-                    id: 'gift_7',
-                    emoji: '🧫',
-                    name: 'Пробирка',
-                    description: 'Пробирка для хранения веществ',
-                    price: 7,
-                    currency: 'stars',
-                    category: 'Набор юного химика'
-                }
-            ];
         }
     } catch (error) {
         console.error('Ошибка загрузки подарков:', error);
@@ -190,18 +144,28 @@ async function loadGifts() {
 }
 
 function renderProfile() {
-    const user = Api.getCurrentUser ? Api.getCurrentUser() : null;
-    if (!user) {
-        console.log('Пользователь не найден в API, проверяем localStorage');
-        const localData = localStorage.getItem('userData');
-        if (localData) {
-            const localUser = JSON.parse(localData);
-            updateUIFromUser(localUser);
-        }
-        return;
+    let user = null;
+    
+    // Пытаемся получить пользователя из API
+    if (typeof Api !== 'undefined' && Api.getCurrentUser) {
+        user = Api.getCurrentUser();
     }
     
-    // Прогресс коллекции
+    // Если нет пользователя из API, создаем временного
+    if (!user) {
+        const localData = localStorage.getItem('userData');
+        if (localData) {
+            user = JSON.parse(localData);
+        }
+    }
+    
+    if (!user) {
+        user = {
+            gifts: [],
+            username: 'Гость'
+        };
+    }
+    
     const userGifts = user.gifts || [];
     const totalGifts = giftsList.length;
     const progress = totalGifts > 0 ? (userGifts.length / totalGifts) * 100 : 0;
@@ -217,10 +181,26 @@ function renderProfile() {
     if (elements.collectionProgress) {
         elements.collectionProgress.value = progress;
     }
+    
+    if (elements.totalGifts) {
+        elements.totalGifts.textContent = userGifts.length;
+    }
 }
 
 function renderGiftsCollection() {
-    const user = Api.getCurrentUser ? Api.getCurrentUser() : null;
+    let user = null;
+    
+    if (typeof Api !== 'undefined' && Api.getCurrentUser) {
+        user = Api.getCurrentUser();
+    }
+    
+    if (!user) {
+        const localData = localStorage.getItem('userData');
+        if (localData) {
+            user = JSON.parse(localData);
+        }
+    }
+    
     if (!user) return;
     
     const userGifts = user.gifts || [];
@@ -261,8 +241,29 @@ function renderGiftsCollection() {
 }
 
 function renderAchievements() {
-    const user = Api.getCurrentUser ? Api.getCurrentUser() : null;
-    if (!user) return;
+    let user = null;
+    let gameState = null;
+    
+    // Получаем данные пользователя
+    if (typeof Api !== 'undefined' && Api.getCurrentUser) {
+        user = Api.getCurrentUser();
+    }
+    
+    // Получаем игровую статистику
+    const localState = localStorage.getItem('gameState');
+    if (localState) {
+        gameState = JSON.parse(localState);
+    }
+    
+    // Объединяем данные
+    const stats = {
+        balance: (user?.balance || gameState?.balance || 0),
+        coins: (user?.coins || gameState?.coins || 0),
+        spinCount: (user?.spin_count || gameState?.spinCount || 0),
+        winCount: (user?.win_count || gameState?.winCount || 0),
+        jackpots: (user?.jackpots || gameState?.jackpots || 0),
+        gifts: user?.gifts || []
+    };
     
     const achievements = [
         {
@@ -270,35 +271,35 @@ function renderAchievements() {
             title: 'Первый джекпот',
             description: 'Выиграйте джекпот',
             icon: '🎰',
-            condition: (user) => (user.jackpots || 0) > 0
+            condition: (stats) => stats.jackpots > 0
         },
         {
             id: 'first_purchase',
             title: 'Первый покупатель',
             description: 'Купите любой подарок',
             icon: '🛍️',
-            condition: (user) => user.gifts && user.gifts.length > 0
+            condition: (stats) => stats.gifts && stats.gifts.length > 0
         },
         {
             id: 'star_player',
             title: 'Звёздный игрок',
             description: 'Накопите 1000 звёзд',
             icon: '⭐',
-            condition: (user) => (user.balance || 0) >= 1000
+            condition: (stats) => stats.balance >= 1000
         },
         {
             id: 'spinning_king',
             title: 'Король вращений',
             description: 'Сделайте 100 спинов',
             icon: '👑',
-            condition: (user) => (user.spin_count || user.spinCount || 0) >= 100
+            condition: (stats) => stats.spinCount >= 100
         },
         {
             id: 'rich_chemist',
             title: 'Богатый химик',
             description: 'Соберите все подарки набора',
             icon: '🧪',
-            condition: (user) => user.gifts && user.gifts.length >= (giftsList.length || 7)
+            condition: (stats) => stats.gifts && stats.gifts.length >= (giftsList.length || 7)
         }
     ];
     
@@ -306,7 +307,7 @@ function renderAchievements() {
         elements.achievementsGrid.innerHTML = '';
         
         achievements.forEach(achievement => {
-            const isUnlocked = achievement.condition(user);
+            const isUnlocked = achievement.condition(stats);
             
             const achievementEl = document.createElement('div');
             achievementEl.className = `achievement ${isUnlocked ? 'unlocked' : 'locked'}`;
@@ -329,17 +330,6 @@ function renderAchievements() {
 
 function setupEventListeners() {
     // Можно добавить обработчики для взаимодействий
-}
-
-function showNotification(message, duration = 3000) {
-    if (elements.notification && elements.notificationText) {
-        elements.notificationText.textContent = message;
-        elements.notification.classList.add('show');
-        
-        setTimeout(() => {
-            elements.notification.classList.remove('show');
-        }, duration);
-    }
 }
 
 // Инициализация

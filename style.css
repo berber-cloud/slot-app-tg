@@ -1308,3 +1308,200 @@ collection-info progress::-webkit-progress-value {
     color: gold;
     margin-left: auto;
 }
+
+/* Навигация внизу */
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 40px);
+    max-width: 480px;
+    background: rgba(20, 20, 35, 0.95);
+    border-radius: 20px;
+    padding: 12px;
+    margin: 0;
+    z-index: 100;
+    box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Увеличиваем отступ для контента */
+.main-content {
+    margin-bottom: 100px;
+    padding-bottom: 20px;
+}
+
+/* Адаптивность для навигации */
+@media (max-width: 480px) {
+    .bottom-nav {
+        bottom: 10px;
+        width: calc(100% - 20px);
+        padding: 10px;
+    }
+    
+    .main-content {
+        margin-bottom: 90px;
+    }
+}
+
+/* Улучшенные стили для таблицы выигрышей */
+.win-combination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+}
+
+.win-combination:hover {
+    transform: translateX(5px);
+    background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+    border-color: rgba(255, 215, 0, 0.3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.combo-symbols {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.combo-symbols span {
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.combo-symbols span:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.combo-prize {
+    font-weight: bold;
+    color: gold;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 8px 16px;
+    border-radius: 25px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.wins-table-double .combo-symbols span {
+    width: 45px;
+    height: 45px;
+    font-size: 24px;
+}
+
+/* Стили для статистики */
+.stats-info {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 25px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    font-size: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s;
+}
+
+.stat-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    border-color: rgba(0, 123, 255, 0.3);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.1);
+}
+
+.stat-item i {
+    color: #00d2ff;
+    font-size: 18px;
+    width: 30px;
+    text-align: center;
+}
+
+.stat-item span:first-child {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-grow: 1;
+}
+
+.stat-item span:last-child {
+    font-weight: bold;
+    color: gold;
+    font-size: 18px;
+    min-width: 60px;
+    text-align: right;
+}
+
+/* Анимации */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.stat-item:hover i {
+    animation: pulse 1s infinite;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .win-combination {
+        padding: 12px;
+    }
+    
+    .combo-symbols span {
+        width: 40px;
+        height: 40px;
+        font-size: 22px;
+    }
+    
+    .combo-prize {
+        font-size: 16px;
+        padding: 6px 12px;
+    }
+    
+    .wins-table-double .combo-symbols span {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+    }
+    
+    .stat-item {
+        padding: 12px;
+        font-size: 14px;
+    }
+    
+    .stat-item span:last-child {
+        font-size: 16px;
+    }
+}

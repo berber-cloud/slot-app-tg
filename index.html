@@ -10,26 +10,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Навигация -->
-        <nav class="navbar">
-            <a href="index.html" class="nav-item active">
-                <i class="fas fa-dice"></i>
-                <span>Слоты</span>
-            </a>
-            <a href="shop.html" class="nav-item">
-                <i class="fas fa-shopping-bag"></i>
-                <span>Магазин</span>
-            </a>
-            <a href="wallet.html" class="nav-item">
-                <i class="fas fa-wallet"></i>
-                <span>Пополнить</span>
-            </a>
-            <a href="profile.html" class="nav-item">
-                <i class="fas fa-user"></i>
-                <span>Профиль</span>
-            </a>
-        </nav>
-
         <header class="header">
             <div class="balance-container">
                 <div class="balance">
@@ -208,11 +188,31 @@
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-percentage"></i>
-                        <span>Шанс на победу: ~25%</span>
+                        <span>Процент побед: <span id="winRate">0%</span></span>
                     </div>
                 </div>
             </div>
         </main>
+        
+        <!-- Навигация внизу -->
+        <nav class="navbar bottom-nav">
+            <a href="index.html" class="nav-item active">
+                <i class="fas fa-dice"></i>
+                <span>Слоты</span>
+            </a>
+            <a href="shop.html" class="nav-item">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Магазин</span>
+            </a>
+            <a href="wallet.html" class="nav-item">
+                <i class="fas fa-wallet"></i>
+                <span>Пополнить</span>
+            </a>
+            <a href="profile.html" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </a>
+        </nav>
         
         <div class="notification" id="notification">
             <span id="notificationText"></span>
