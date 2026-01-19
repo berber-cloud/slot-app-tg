@@ -93,7 +93,8 @@ console.log('Updating user stats:', {
 const { data: updatedUser, error: updateError } = await supabase
     .from('users')
     .update(updateData)
-    .eq('id', userId)  // Ищем по ВНУТРЕННЕМУ ID (UUID)
+    //.eq('id', userId)  // Ищем по ВНУТРЕННЕМУ ID (UUID)
+    .eq('telegram_id', userId)
     .select()
     .single();
 
