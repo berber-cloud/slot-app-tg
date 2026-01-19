@@ -23,12 +23,51 @@ const elements = {
 let giftsList = [];
 
 async function init() {
+    // Сначала пытаемся синхронизировать с БД
+    await syncWithDatabase();
+    
     await loadUserData();
     await loadGifts();
     setupEventListeners();
     renderProfile();
     renderGiftsCollection();
     renderAchievements();
+}
+
+async function syncWithDatabase() {
+    try {
+        if (typeof Api !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                // Инициализируем пользователя в БД
+                await Api.initUser({
+                    id: tgUser.id.toString(),
+                    username: tgUser.username || 'Гость',
+                    first_name: tgUser.first_name || '',
+                    last_name: tgUser.last_name || '',
+                    photo_url: tgUser.photo_url || ''
+                });
+                
+                // Загружаем свежие данные
+                const user = Api.getCurrentUser();
+                if (user) {
+                    // Обновляем localStorage из БД
+                    localStorage.setItem('userData', JSON.stringify(user));
+                    
+                    // Обновляем gameState из статистики БД
+                    const gameState = JSON.parse(localStorage.getItem('gameState') || '{}');
+                    gameState.spinCount = user.spin_count || gameState.spinCount || 0;
+                    gameState.winCount = user.win_count || gameState.winCount || 0;
+                    gameState.jackpots = user.jackpots || gameState.jackpots || 0;
+                    localStorage.setItem('gameState', JSON.stringify(gameState));
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка синхронизации:', error);
+    }
 }
 
 async function loadUserData() {

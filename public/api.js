@@ -7,6 +7,7 @@ const API_BASE_URL = '/api';
 let userCache = null;
 
 class Api {
+    
     // Инициализация пользователя
     static async initUser(userData) {
         try {
@@ -38,6 +39,8 @@ class Api {
             return this.createLocalUser(userData);
         }
     }
+
+    
     
     // Получение пользователя по Telegram ID
     static async getUser(telegramId) {
