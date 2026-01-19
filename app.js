@@ -1,55 +1,46 @@
-// Инициализация Telegram Web App
-const tg = window.Telegram.WebApp;
-if (tg && tg.expand) tg.expand();
+// app.js - Исправленная версия
 
 // Конфигурация игры
 const CONFIG = {
-    symbols: [
-        { emoji: '🍒', class: 'cherry', weight: 20 },
-        { emoji: '🍋', class: 'lemon', weight: 18 },
-        { emoji: '🍊', class: 'orange', weight: 16 },
-        { emoji: '🍉', class: 'watermelon', weight: 14 },
-        { emoji: '⭐', class: 'star', weight: 12 },
-        { emoji: '🔔', class: 'bell', weight: 10 },
-        { emoji: '💎', class: 'diamond', weight: 7 },
-        { emoji: '🎰', class: 'seven', weight: 3 }
-    ],
+    symbols: ['🍒', '🍋', '🍊', '🍉', '⭐', '🔔', '💎', '🎰'],
+    probabilities: {
+        '🍒': 0.18,
+        '🍋': 0.16,
+        '🍊': 0.14,
+        '🍉': 0.12,
+        '⭐': 0.10,
+        '🔔': 0.10,
+        '💎': 0.10,
+        '🎰': 0.10
+    },
     payouts: {
-        '🎰🎰🎰': 1000,  // Джекпот
+        '🎰🎰🎰': 1000,
         '💎💎💎': 500,
         '🔔🔔🔔': 200,
         '⭐⭐⭐': 100,
         '🍉🍉🍉': 50,
         '🍊🍊🍊': 30,
         '🍋🍋🍋': 20,
-        '🍒🍒🍒': 10,
-        // Комбинации с 2 одинаковыми символами
-        '🎰🎰': 50,
-        '💎💎': 40,
-        '🔔🔔': 30,
-        '⭐⭐': 25,
-        '🍉🍉': 20,
-        '🍊🍊': 15,
-        '🍋🍋': 10,
-        '🍒🍒': 5
+        '🍒🍒🍒': 10
     }
 };
 
 // Состояние игры
 const state = {
     balance: 100,
+    coins: 0,
     jackpots: 0,
     isSpinning: false,
     lastWin: 0,
-    currentSymbols: ['🍒', '🍒', '🍒'],
     spinCount: 0,
     winCount: 0,
-    loseStreak: 0
+    currentSymbols: ['🍒', '🍒', '🍒']
 };
 
 // DOM элементы
 const elements = {
     balance: document.getElementById('balance'),
+    coins: document.getElementById('coins'),
     jackpots: document.getElementById('jackpots'),
     spinButton: document.getElementById('spinButton'),
     winAmount: document.getElementById('winAmount'),
@@ -57,7 +48,6 @@ const elements = {
     reel1: document.getElementById('reel1'),
     reel2: document.getElementById('reel2'),
     reel3: document.getElementById('reel3'),
-    addCoins: document.getElementById('addCoins'),
     notification: document.getElementById('notification'),
     notificationText: document.getElementById('notificationText'),
     totalSpins: document.getElementById('totalSpins'),
@@ -66,59 +56,132 @@ const elements = {
 
 // Инициализация
 function init() {
+    console.log('Инициализация игры...');
     loadGameState();
-    initializeReels();
     updateUI();
+    initializeReels();
     setupEventListeners();
+    
+    // Загружаем данные пользователя из API если есть
+    loadUserData();
 }
 
 // Загрузка состояния из localStorage
 function loadGameState() {
-    const savedBalance = localStorage.getItem('slotsBalance');
-    const savedJackpots = localStorage.getItem('slotsJackpots');
-    const savedSpinCount = localStorage.getItem('slotsSpinCount');
-    const savedWinCount = localStorage.getItem('slotsWinCount');
-    
-    if (savedBalance) state.balance = parseInt(savedBalance);
-    if (savedJackpots) state.jackpots = parseInt(savedJackpots);
-    if (savedSpinCount) state.spinCount = parseInt(savedSpinCount);
-    if (savedWinCount) state.winCount = parseInt(savedWinCount);
+    try {
+        const savedBalance = localStorage.getItem('slotsBalance');
+        const savedCoins = localStorage.getItem('slotsCoins');
+        const savedJackpots = localStorage.getItem('slotsJackpots');
+        const savedSpinCount = localStorage.getItem('slotsSpinCount');
+        const savedWinCount = localStorage.getItem('slotsWinCount');
+        
+        console.log('Загрузка из localStorage:', {
+            balance: savedBalance,
+            coins: savedCoins,
+            jackpots: savedJackpots,
+            spinCount: savedSpinCount,
+            winCount: savedWinCount
+        });
+        
+        if (savedBalance !== null) state.balance = parseInt(savedBalance) || 100;
+        if (savedCoins !== null) state.coins = parseInt(savedCoins) || 0;
+        if (savedJackpots !== null) state.jackpots = parseInt(savedJackpots) || 0;
+        if (savedSpinCount !== null) state.spinCount = parseInt(savedSpinCount) || 0;
+        if (savedWinCount !== null) state.winCount = parseInt(savedWinCount) || 0;
+        
+    } catch (error) {
+        console.error('Ошибка загрузки из localStorage:', error);
+        // Значения по умолчанию
+        state.balance = 100;
+        state.coins = 0;
+        state.jackpots = 0;
+        state.spinCount = 0;
+        state.winCount = 0;
+    }
 }
 
 // Сохранение состояния в localStorage
 function saveGameState() {
-    localStorage.setItem('slotsBalance', state.balance.toString());
-    localStorage.setItem('slotsJackpots', state.jackpots.toString());
-    localStorage.setItem('slotsSpinCount', state.spinCount.toString());
-    localStorage.setItem('slotsWinCount', state.winCount.toString());
+    try {
+        localStorage.setItem('slotsBalance', state.balance.toString());
+        localStorage.setItem('slotsCoins', state.coins.toString());
+        localStorage.setItem('slotsJackpots', state.jackpots.toString());
+        localStorage.setItem('slotsSpinCount', state.spinCount.toString());
+        localStorage.setItem('slotsWinCount', state.winCount.toString());
+    } catch (error) {
+        console.error('Ошибка сохранения в localStorage:', error);
+    }
+}
+
+// Загрузка данных пользователя из API
+async function loadUserData() {
+    try {
+        if (typeof Api !== 'undefined' && Api.getCurrentUser) {
+            const user = Api.getCurrentUser();
+            if (user) {
+                console.log('Пользователь из API:', user);
+                // Обновляем состояние из данных пользователя
+                state.balance = user.balance || state.balance;
+                state.coins = user.coins || state.coins;
+                state.jackpots = user.jackpots || state.jackpots;
+                state.spinCount = user.spin_count || state.spinCount;
+                state.winCount = user.win_count || state.winCount;
+                
+                updateUI();
+                saveGameState();
+            }
+        }
+    } catch (error) {
+        console.log('API не доступен, используем локальные данные');
+    }
 }
 
 // Инициализация барабанов
 function initializeReels() {
+    console.log('Инициализация барабанов...');
+    
     const reels = [elements.reel1, elements.reel2, elements.reel3];
     
-    reels.forEach(reel => {
+    // Проверяем, существуют ли элементы
+    if (!reels[0] || !reels[1] || !reels[2]) {
+        console.error('Элементы барабанов не найдены!');
+        return;
+    }
+    
+    reels.forEach((reel, index) => {
+        // Очищаем барабан
         reel.innerHTML = '';
         
-        // Создаем 8 символов (двойной набор для плавности)
-        for (let i = 0; i < 8; i++) {
+        // Создаем 3 копии каждого символа
+        for (let copy = 0; copy < 3; copy++) {
             CONFIG.symbols.forEach(symbol => {
                 const item = document.createElement('div');
-                item.className = `slot-item ${symbol.class}`;
-                item.textContent = symbol.emoji;
-                item.dataset.symbol = symbol.emoji;
+                item.className = 'slot-item';
+                item.textContent = symbol;
+                
+                // Добавляем класс для цвета
+                if (symbol === '🍒') item.classList.add('cherry');
+                else if (symbol === '🍋') item.classList.add('lemon');
+                else if (symbol === '🍊') item.classList.add('orange');
+                else if (symbol === '🍉') item.classList.add('watermelon');
+                else if (symbol === '⭐') item.classList.add('star');
+                else if (symbol === '🔔') item.classList.add('bell');
+                else if (symbol === '💎') item.classList.add('diamond');
+                else if (symbol === '🎰') item.classList.add('seven');
+                
                 reel.appendChild(item);
             });
         }
         
-        // Устанавливаем начальную позицию (показываем вишни в середине)
-        setReelToSymbol(reel, '🍒');
+        // Устанавливаем начальную позицию
+        setReelPosition(reel, index);
     });
 }
 
-// Установить барабан на конкретный символ
-function setReelToSymbol(reel, symbol) {
-    const symbolIndex = CONFIG.symbols.findIndex(s => s.emoji === symbol);
+// Установка позиции барабана
+function setReelPosition(reel, reelIndex) {
+    const symbol = state.currentSymbols[reelIndex] || '🍒';
+    const symbolIndex = CONFIG.symbols.indexOf(symbol);
     if (symbolIndex === -1) return;
     
     const itemHeight = 60; // Высота одного символа
@@ -129,27 +192,38 @@ function setReelToSymbol(reel, symbol) {
     const position = -(symbolIndex * itemHeight) + offset;
     
     reel.style.transform = `translateY(${position}px)`;
+    reel.style.transition = 'none'; // Убираем анимацию для начальной позиции
+    
+    // Принудительный reflow
+    reel.offsetHeight;
 }
 
 // Обновление UI
 function updateUI() {
-    elements.balance.textContent = state.balance;
-    elements.jackpots.textContent = state.jackpots;
-    elements.winAmount.textContent = state.lastWin;
+    console.log('Обновление UI:', state);
     
-    if (elements.totalSpins) {
-        elements.totalSpins.textContent = state.spinCount;
-    }
-    if (elements.totalWins) {
-        elements.totalWins.textContent = state.winCount;
-    }
+    if (elements.balance) elements.balance.textContent = state.balance;
+    if (elements.coins) elements.coins.textContent = state.coins;
+    if (elements.jackpots) elements.jackpots.textContent = state.jackpots;
+    if (elements.winAmount) elements.winAmount.textContent = state.lastWin;
+    if (elements.totalSpins) elements.totalSpins.textContent = state.spinCount;
+    if (elements.totalWins) elements.totalWins.textContent = state.winCount;
     
     // Показываем/скрываем дисплей выигрыша
-    elements.winDisplay.style.display = state.lastWin > 0 ? 'flex' : 'none';
+    if (elements.winDisplay) {
+        elements.winDisplay.style.display = state.lastWin > 0 ? 'flex' : 'none';
+    }
+    
+    // Обновляем состояние кнопки
+    if (elements.spinButton) {
+        elements.spinButton.disabled = state.isSpinning || state.balance <= 0;
+    }
 }
 
 // Показ уведомления
 function showNotification(message, duration = 3000) {
+    if (!elements.notification || !elements.notificationText) return;
+    
     elements.notificationText.textContent = message;
     elements.notification.classList.add('show');
     
@@ -158,162 +232,250 @@ function showNotification(message, duration = 3000) {
     }, duration);
 }
 
-// Получить случайный символ с учетом весов
+// Генерация случайного символа
 function getRandomSymbol() {
-    const totalWeight = CONFIG.symbols.reduce((sum, symbol) => sum + symbol.weight, 0);
-    let random = Math.random() * totalWeight;
+    const rand = Math.random();
+    let cumulative = 0;
     
-    for (const symbol of CONFIG.symbols) {
-        if (random < symbol.weight) {
-            return symbol.emoji;
-        }
-        random -= symbol.weight;
-    }
-    
-    return CONFIG.symbols[0].emoji;
-}
-
-// Генерация результатов сбалансированно
-function generateResults() {
-    state.spinCount++;
-    
-    // Каждый 5-8 спин увеличиваем шансы на выигрыш
-    const shouldIncreaseWinChance = state.loseStreak >= 3 || (state.spinCount % 6 === 0);
-    
-    let results = [];
-    
-    if (shouldIncreaseWinChance) {
-        // Генерируем выигрышную комбинацию
-        const winType = Math.random();
-        
-        if (winType < 0.3) {
-            // 3 одинаковых символа (кроме джекпота если мало спинов)
-            let availableSymbols = CONFIG.symbols;
-            if (state.spinCount < 20) {
-                availableSymbols = CONFIG.symbols.filter(s => s.emoji !== '🎰');
-            }
-            const symbol = availableSymbols[Math.floor(Math.random() * availableSymbols.length)];
-            results = [symbol.emoji, symbol.emoji, symbol.emoji];
-        } else if (winType < 0.7) {
-            // 2 одинаковых символа
-            const symbol = CONFIG.symbols[Math.floor(Math.random() * CONFIG.symbols.length)];
-            const position = Math.floor(Math.random() * 3); // 0, 1, или 2
-            
-            results = [
-                position === 0 ? symbol.emoji : getRandomSymbol(),
-                position === 1 ? symbol.emoji : getRandomSymbol(),
-                position === 2 ? symbol.emoji : getRandomSymbol()
-            ];
-            
-            // Гарантируем, что хотя бы 2 одинаковых
-            if (position === 0) results[1] = symbol.emoji;
-            else if (position === 1) results[2] = symbol.emoji;
-            else results[0] = symbol.emoji;
-        } else {
-            // Случайная комбинация с увеличенными шансами на совпадение
-            const firstSymbol = getRandomSymbol();
-            const secondSymbol = Math.random() < 0.4 ? firstSymbol : getRandomSymbol();
-            const thirdSymbol = Math.random() < 0.3 ? firstSymbol : getRandomSymbol();
-            
-            results = [firstSymbol, secondSymbol, thirdSymbol];
-        }
-        
-        // Сбрасываем счетчик проигрышей
-        state.loseStreak = 0;
-    } else {
-        // Обычная случайная генерация
-        for (let i = 0; i < 3; i++) {
-            results.push(getRandomSymbol());
-        }
-        
-        // Небольшой шанс на случайное совпадение
-        if (Math.random() < 0.15 && results[0] === results[1]) {
-            results[2] = results[0];
+    for (const [symbol, probability] of Object.entries(CONFIG.probabilities)) {
+        cumulative += probability;
+        if (rand <= cumulative) {
+            return symbol;
         }
     }
     
-    return results;
+    return '🍒';
 }
 
 // Анимация вращения барабана
-async function spinReel(reel, finalSymbol, reelIndex) {
+function spinReel(reel, finalSymbol, delay = 0) {
     return new Promise(resolve => {
-        const duration = 2000 + (reelIndex * 200); // Разная длительность для каждого барабана
-        const itemHeight = 60;
-        const symbolIndex = CONFIG.symbols.findIndex(s => s.emoji === finalSymbol);
-        
-        // Текущая позиция барабана
-        const currentTransform = reel.style.transform || 'translateY(0px)';
-        const currentY = parseInt(currentTransform.match(/translateY\(([-\d]+)px\)/)[1]) || 0;
-        
-        // Целевая позиция (центрируем символ)
-        const reelHeight = 180;
-        const offset = Math.floor((reelHeight / itemHeight) / 2) * itemHeight;
-        const targetY = -(symbolIndex * itemHeight) + offset;
-        
-        // Для плавного вращения создаем "виртуальный" прокрут
-        const totalDistance = Math.abs(currentY - targetY) + (20 * itemHeight); // Добавляем несколько лишних оборотов
-        const startTime = Date.now();
-        
-        function animate() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
+        setTimeout(() => {
+            const duration = 2000;
+            const itemHeight = 60;
+            const symbolIndex = CONFIG.symbols.indexOf(finalSymbol);
             
-            // Кривая замедления
-            const easeOut = 1 - Math.pow(1 - progress, 3);
+            // Вычисляем целевую позицию
+            const reelHeight = 180;
+            const offset = Math.floor((reelHeight / itemHeight) / 2) * itemHeight;
+            const targetY = -(symbolIndex * itemHeight) + offset;
             
-            // Вычисляем текущую позицию
-            let currentDistance = totalDistance * easeOut;
-            let newY = currentY - currentDistance;
+            // Текущая позиция
+            const currentTransform = reel.style.transform || 'translateY(0px)';
+            const match = currentTransform.match(/translateY\(([-\d]+)px\)/);
+            const currentY = match ? parseInt(match[1]) : 0;
             
-            // Нормализуем позицию (зацикливаем)
-            const totalSymbols = CONFIG.symbols.length * 8; // Всего символов в барабане
-            const maxY = -totalSymbols * itemHeight;
+            // Добавляем несколько дополнительных оборотов
+            const extraSpins = 5;
+            const extraDistance = extraSpins * CONFIG.symbols.length * itemHeight;
             
-            if (newY < maxY) {
-                newY = 0;
-            }
+            // Устанавливаем начальную анимацию
+            reel.style.transition = 'none';
+            reel.style.transform = `translateY(${currentY - extraDistance}px)`;
             
-            reel.style.transform = `translateY(${newY}px)`;
+            // Принудительный reflow
+            reel.offsetHeight;
             
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // Финальная позиция
-                reel.style.transform = `translateY(${targetY}px)`;
+            // Запускаем анимацию к цели
+            reel.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.3, 1)`;
+            reel.style.transform = `translateY(${targetY}px)`;
+            
+            setTimeout(() => {
                 resolve();
+            }, duration);
+        }, delay);
+    });
+}
+
+// Обновление статистики через API
+async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncrement = 0) {
+    try {
+        console.log('Обновление статистики:', { spinIncrement, winIncrement, jackpotIncrement });
+        
+        // Обновляем локальную статистику
+        if (spinIncrement > 0) state.spinCount += spinIncrement;
+        if (winIncrement > 0) state.winCount += winIncrement;
+        if (jackpotIncrement > 0) state.jackpots += jackpotIncrement;
+        
+        // Сохраняем локально
+        saveGameState();
+        
+        // Обновляем через API если доступно
+        if (typeof Api !== 'undefined' && Api.updateStats) {
+            const user = Api.getCurrentUser();
+            if (user) {
+                await Api.updateStats(user.id, spinIncrement, winIncrement, jackpotIncrement);
+                console.log('Статистика обновлена через API');
             }
         }
         
-        requestAnimationFrame(animate);
-    });
+        // Обновляем UI
+        updateUI();
+        
+    } catch (error) {
+        console.log('Ошибка обновления статистики:', error);
+    }
+}
+
+// Основная функция вращения
+async function spin() {
+    console.log('Запуск вращения...');
+    
+    if (state.isSpinning) {
+        console.log('Уже вращается!');
+        return;
+    }
+    
+    if (state.balance <= 0) {
+        showNotification('Недостаточно звёзд! Пополните баланс.', 2000);
+        return;
+    }
+    
+    state.isSpinning = true;
+    state.lastWin = 0;
+    
+    if (elements.spinButton) {
+        elements.spinButton.disabled = true;
+    }
+    
+    updateUI();
+    
+    // Вычитаем 1 звезду за спин
+    const previousBalance = state.balance;
+    state.balance -= 1;
+    
+    console.log('Баланс до спина:', previousBalance, 'после:', state.balance);
+    
+    try {
+        // Обновляем статистику через API если доступно
+        try {
+            if (typeof Api !== 'undefined' && Api.updateStats && Api.updateBalance) {
+                const user = Api.getCurrentUser();
+                if (user) {
+                    await Api.updateBalance(user.id, -1, 0);
+                    console.log('Баланс обновлен через API');
+                }
+            }
+        } catch (apiError) {
+            console.log('API обновление не удалось, используем локальные данные');
+        }
+        
+        // Генерируем новые символы
+        const newSymbols = [
+            getRandomSymbol(),
+            getRandomSymbol(),
+            getRandomSymbol()
+        ];
+        
+        console.log('Новые символы:', newSymbols);
+        state.currentSymbols = newSymbols;
+        
+        // Запускаем вращение барабанов с задержкой
+        await Promise.all([
+            spinReel(elements.reel1, newSymbols[0], 0),
+            spinReel(elements.reel2, newSymbols[1], 200),
+            spinReel(elements.reel3, newSymbols[2], 400)
+        ]);
+        
+        console.log('Барабаны остановились');
+        
+        // Проверяем выигрыш
+        const winResult = checkWin(newSymbols);
+        console.log('Результат проверки выигрыша:', winResult);
+        
+        if (winResult.amount > 0) {
+            state.lastWin = winResult.amount;
+            state.balance += winResult.amount;
+            
+            // Обновляем статистику
+            const jackpotIncrement = (winResult.type === 'triple' && newSymbols[0] === '🎰') ? 1 : 0;
+            await updateGameStats(0, 1, jackpotIncrement); // winCount +1
+            
+            if (winResult.type === 'triple' && newSymbols[0] === '🎰') {
+                showNotification(`🎉 ДЖЕКПОТ! +${winResult.amount} звёзд! 🎉`, 5000);
+            } else if (winResult.type === 'triple') {
+                showNotification(`🎊 Три в ряд! +${winResult.amount} звёзд!`, 3000);
+            } else {
+                showNotification(`🎯 Вы выиграли ${winResult.amount} звёзд!`, 3000);
+            }
+            
+            // Обновляем баланс через API
+            try {
+                if (typeof Api !== 'undefined' && Api.updateBalance) {
+                    const user = Api.getCurrentUser();
+                    if (user) {
+                        await Api.updateBalance(user.id, winResult.amount, 0);
+                    }
+                }
+            } catch (apiError) {
+                console.log('API обновление выигрыша не удалось');
+            }
+            
+            // Анимация выигрыша
+            if (elements.winDisplay) {
+                elements.winDisplay.classList.add('win-animation');
+                setTimeout(() => {
+                    elements.winDisplay.classList.remove('win-animation');
+                }, 1500);
+            }
+        } else {
+            // Проигрыш - только увеличиваем счетчик спинов
+            await updateGameStats(1, 0, 0); // spinCount +1
+            showNotification('Повезёт в следующий раз!', 2000);
+        }
+        
+    } catch (error) {
+        console.error('Ошибка вращения:', error);
+        showNotification('Ошибка вращения', 2000);
+    } finally {
+        // Сбрасываем состояние
+        state.isSpinning = false;
+        
+        if (elements.spinButton) {
+            elements.spinButton.disabled = false;
+        }
+        
+        updateUI();
+        saveGameState();
+        
+        console.log('Вращение завершено. Новое состояние:', state);
+        
+        // Загружаем обновленные данные пользователя
+        loadUserData();
+    }
 }
 
 // Проверка выигрышной комбинации
 function checkWin(results) {
+    const combination = results.join('');
     let winAmount = 0;
     let winType = '';
+    
+    console.log('Проверка комбинации:', combination);
     
     // Проверяем 3 одинаковых символа
     if (results[0] === results[1] && results[1] === results[2]) {
         const key = results[0] + results[1] + results[2];
         winAmount = CONFIG.payouts[key] || 0;
         winType = 'triple';
+        console.log('Три в ряд! Выигрыш:', winAmount);
     } 
-    // Проверяем 2 одинаковых символа (разные варианты)
+    // Проверяем 2 одинаковых символа
     else {
         const combinations = [
-            { symbols: [results[0], results[1]], key: results[0] + results[1] }, // Первые два
-            { symbols: [results[1], results[2]], key: results[1] + results[2] }, // Последние два
-            { symbols: [results[0], results[2]], key: results[0] + results[2] }  // Первый и третий
+            { symbols: [results[0], results[1]], key: results[0] + results[1] },
+            { symbols: [results[1], results[2]], key: results[1] + results[2] },
+            { symbols: [results[0], results[2]], key: results[0] + results[2] }
         ];
         
         for (const combo of combinations) {
             if (combo.symbols[0] === combo.symbols[1]) {
-                const amount = CONFIG.payouts[combo.key] || 0;
-                if (amount > winAmount) {
-                    winAmount = amount;
+                // Базовая сумма за 2 символа
+                const baseAmount = 5;
+                if (baseAmount > winAmount) {
+                    winAmount = baseAmount;
                     winType = 'double';
+                    console.log('Два одинаковых! Выигрыш:', winAmount);
                 }
             }
         }
@@ -322,122 +484,63 @@ function checkWin(results) {
     return { amount: winAmount, type: winType };
 }
 
-// Основная функция вращения
-async function spin() {
-    if (state.isSpinning) return;
-    
-    if (state.balance <= 0) {
-        showNotification('Недостаточно звёзд! Добавьте ещё.', 2000);
-        return;
-    }
-    
-    state.isSpinning = true;
-    state.lastWin = 0;
-    elements.spinButton.disabled = true;
-    updateUI();
-    
-    // Генерируем результаты
-    const newSymbols = generateResults();
-    state.currentSymbols = newSymbols;
-    
-    try {
-        // Запускаем вращение всех барабанов
-        await Promise.all([
-            spinReel(elements.reel1, newSymbols[0], 0),
-            spinReel(elements.reel2, newSymbols[1], 1),
-            spinReel(elements.reel3, newSymbols[2], 2)
-        ]);
-        
-        // Проверяем выигрыш
-        const winResult = checkWin(newSymbols);
-        
-        if (winResult.amount > 0) {
-            state.lastWin = winResult.amount;
-            state.balance += winResult.amount;
-            state.winCount++;
-            state.loseStreak = 0;
-            
-            // Показываем соответствующее уведомление
-            if (winResult.type === 'triple') {
-                if (newSymbols[0] === '🎰') {
-                    state.jackpots++;
-                    showNotification(`🎉 ДЖЕКПОТ! +${winResult.amount} звёзд! 🎉`, 5000);
-                    
-                    // Анимация джекпота
-                    const reels = [elements.reel1, elements.reel2, elements.reel3];
-                    reels.forEach(reel => {
-                        reel.classList.add('winning-combo');
-                    });
-                    
-                    setTimeout(() => {
-                        reels.forEach(reel => {
-                            reel.classList.remove('winning-combo');
-                        });
-                    }, 3000);
-                } else {
-                    showNotification(`🎊 Три в ряд! +${winResult.amount} звёзд!`, 3000);
-                }
-            } else if (winResult.type === 'double') {
-                // Определяем, какие именно символы совпали
-                let matchType = '';
-                if (newSymbols[0] === newSymbols[1]) matchType = 'первые два';
-                else if (newSymbols[1] === newSymbols[2]) matchType = 'последние два';
-                else if (newSymbols[0] === newSymbols[2]) matchType = 'крайние';
-                
-                showNotification(`🎯 Два одинаковых (${matchType})! +${winResult.amount} звёзд!`, 3000);
-            }
-            
-            // Анимация выигрыша
-            elements.winDisplay.classList.add('win-animation');
-            setTimeout(() => {
-                elements.winDisplay.classList.remove('win-animation');
-            }, 1500);
-        } else {
-            state.loseStreak++;
-            showNotification('Повезёт в следующий раз!', 2000);
-        }
-        
-    } catch (error) {
-        console.error('Spin error:', error);
-        showNotification('Ошибка вращения', 2000);
-    } finally {
-        // Сбрасываем состояние
-        state.isSpinning = false;
-        elements.spinButton.disabled = false;
-        updateUI();
-        saveGameState();
-    }
-}
-
 // Настройка обработчиков событий
 function setupEventListeners() {
-    elements.spinButton.addEventListener('click', spin);
+    console.log('Настройка обработчиков событий...');
     
-    elements.addCoins.addEventListener('click', () => {
-        state.balance += 100;
-        updateUI();
-        saveGameState();
-        showNotification('+100 звёзд добавлено!', 2000);
-    });
+    if (elements.spinButton) {
+        console.log('Кнопка спина найдена');
+        
+        elements.spinButton.addEventListener('click', function(e) {
+            console.log('Клик по кнопке спина!');
+            e.preventDefault();
+            e.stopPropagation();
+            spin();
+        });
+        
+        // Анимация при наведении
+        elements.spinButton.addEventListener('mouseenter', () => {
+            if (!state.isSpinning) {
+                elements.spinButton.style.transform = 'scale(1.05)';
+            }
+        });
+        
+        elements.spinButton.addEventListener('mouseleave', () => {
+            elements.spinButton.style.transform = 'scale(1)';
+        });
+    } else {
+        console.error('Кнопка спина не найдена!');
+    }
     
-    // Анимация при наведении на кнопку спины
-    elements.spinButton.addEventListener('mouseenter', () => {
-        if (!state.isSpinning) {
-            elements.spinButton.style.transform = 'scale(1.05)';
+    // Добавляем обработчик для клавиши пробела
+    document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && !state.isSpinning && state.balance > 0) {
+            e.preventDefault();
+            spin();
         }
     });
-    
-    elements.spinButton.addEventListener('mouseleave', () => {
-        elements.spinButton.style.transform = 'scale(1)';
-    });
-    
-    // Обработчик для Telegram кнопки "назад"
-    if (tg && tg.BackButton) {
-        tg.BackButton.onClick(() => {
-            tg.close();
-        });
-    }
 }
 
 // Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    console.log('Документ загружается, ждем DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded сработал');
+        init();
+    });
+} else {
+    console.log('Документ уже загружен, инициализируем сразу');
+    init();
+}
+
+// Экспортируем функции для отладки
+window.debugGame = {
+    state: state,
+    spin: spin,
+    getRandomSymbol: getRandomSymbol,
+    checkWin: checkWin,
+    updateUI: updateUI,
+    showNotification: showNotification
+};
+
+console.log('app.js загружен');

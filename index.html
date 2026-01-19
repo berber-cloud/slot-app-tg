@@ -10,15 +10,36 @@
 </head>
 <body>
     <div class="container">
+        <!-- Навигация -->
+        <nav class="navbar">
+            <a href="index.html" class="nav-item active">
+                <i class="fas fa-dice"></i>
+                <span>Слоты</span>
+            </a>
+            <a href="shop.html" class="nav-item">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Магазин</span>
+            </a>
+            <a href="wallet.html" class="nav-item">
+                <i class="fas fa-wallet"></i>
+                <span>Пополнить</span>
+            </a>
+            <a href="profile.html" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </a>
+        </nav>
+
         <header class="header">
             <div class="balance-container">
                 <div class="balance">
                     <i class="fas fa-star"></i>
                     <span id="balance">0</span>
                 </div>
-                <button class="btn-add" id="addCoins">
-                    <i class="fas fa-plus"></i>
-                </button>
+                <div class="balance coins-balance">
+                    <i class="fas fa-coins"></i>
+                    <span id="coins">0</span>
+                </div>
             </div>
             
             <div class="logo">
@@ -198,6 +219,7 @@
         </div>
     </div>
     
+    <script src="api.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
