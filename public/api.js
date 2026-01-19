@@ -82,43 +82,43 @@ class Api {
     }
     
     // Обновление баланса
-    static async updateBalance(userId, starsDelta = 0, coinsDelta = 0) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/user-balance/${userId}`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ stars: starsDelta, coins: coinsDelta })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+   static async getUser(userId) {
+    try {
+        console.log('🔍 Api.getUser вызван с:', userId);
+        
+        // user-get теперь принимает любой ID (telegram_id или UUID)
+        const response = await fetch(`${API_BASE_URL}/user-get/${userId}`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        console.log('📨 Ответ getUser:', response.status);
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                return { success: false, error: 'Пользователь не найден' };
             }
-            
-            const data = await response.json();
-            
-            if (data.success && userCache && userCache.id === userId) {
-                userCache.balance += starsDelta;
-                userCache.coins += coinsDelta;
-                userCache.updated_at = new Date().toISOString();
-                localStorage.setItem('userData', JSON.stringify(userCache));
-            }
-            
-            return data;
-        } catch (error) {
-            console.error('Ошибка обновления баланса:', error);
-            // Fallback на localStorage
-            if (userCache && userCache.id === userId) {
-                userCache.balance += starsDelta;
-                userCache.coins += coinsDelta;
-                localStorage.setItem('userData', JSON.stringify(userCache));
-                return { success: true };
-            }
-            return { success: false, error: 'Ошибка обновления' };
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            userCache = data.user;
+            localStorage.setItem('userData', JSON.stringify(data.user));
+            console.log('✅ Пользователь загружен в кэш:', data.user.id);
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Ошибка получения пользователя:', error);
+        const localData = localStorage.getItem('userData');
+        if (localData) {
+            userCache = JSON.parse(localData);
+            return { success: true, user: userCache };
+        }
+        return { success: false, error: 'Ошибка загрузки данных' };
     }
+}
     
     // Обновление статистики
     static async updateStats(userId, spinCount = 0, winCount = 0, jackpots = 0) {

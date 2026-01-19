@@ -21,7 +21,10 @@ exports.handler = async (event, context) => {
     }
 
     try {
+        // Получаем ID из URL (может быть telegramId или userId)
         const { telegramId } = event.pathParameters || {};
+        
+        console.log('🔍 user-get вызван с параметром:', telegramId);
 
         if (!telegramId) {
             return {
@@ -29,32 +32,57 @@ exports.handler = async (event, context) => {
                 headers,
                 body: JSON.stringify({ 
                     success: false, 
-                    error: 'Telegram ID is required' 
+                    error: 'ID is required' 
                 })
             };
         }
 
-        const { data: user, error } = await supabase
+        // Пробуем найти пользователя разными способами
+        let user = null;
+        let error = null;
+
+        // Сначала пробуем найти по telegram_id (как число/строка)
+        let { data: userByTelegram, error: error1 } = await supabase
             .from('users')
             .select('*')
             .eq('telegram_id', telegramId)
             .single();
 
-        if (error) {
-            if (error.code === 'PGRST116') {
-                return {
-                    statusCode: 404,
-                    headers,
-                    body: JSON.stringify({ 
-                        success: false, 
-                        error: 'Пользователь не найден' 
-                    })
-                };
+        // Если не нашли по telegram_id, пробуем по id (UUID)
+        if (error1 && error1.code === 'PGRST116') {
+            console.log('Не найден по telegram_id, пробуем по UUID...');
+            const { data: userById, error: error2 } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', telegramId)  // Здесь telegramId на самом деле может быть UUID
+                .single();
+            
+            if (error2) {
+                error = error2;
+            } else {
+                user = userById;
             }
-            throw error;
+        } else if (error1) {
+            error = error1;
+        } else {
+            user = userByTelegram;
+        }
+
+        if (error) {
+            console.error('❌ Ошибка поиска пользователя:', error);
+            return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ 
+                    success: false, 
+                    error: 'Пользователь не найден' 
+                })
+            };
         }
 
         if (user) {
+            console.log('✅ Пользователь найден:', { id: user.id, telegram_id: user.telegram_id });
+            
             // Получаем подарки пользователя
             const { data: gifts } = await supabase
                 .from('gifts')
@@ -71,7 +99,7 @@ exports.handler = async (event, context) => {
         }
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('💥 Ошибка в user-get:', error);
         
         return {
             statusCode: 500,

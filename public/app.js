@@ -134,63 +134,40 @@ function saveGameState() {
 // Загрузка данных пользователя из API
 async function loadUserData() {
     try {
-        // Пытаемся получить Telegram пользователя
-        let telegramUser = null;
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            telegramUser = tg.initDataUnsafe?.user;
-        }
-        
-        if (telegramUser && typeof Api !== 'undefined') {
-            console.log('Telegram пользователь найден:', telegramUser);
-            
-            // 1. Инициализируем/получаем пользователя
-            const initResult = await Api.initUser({
-                id: telegramUser.id.toString(),
-                username: telegramUser.username || 'Гость',
-                first_name: telegramUser.first_name || '',
-                last_name: telegramUser.last_name || '',
-                photo_url: telegramUser.photo_url || ''
-            });
-            
-            if (initResult.success) {
-                const dbUser = initResult.user;
-                console.log('Пользователь из БД:', dbUser);
+        if (typeof Api !== 'undefined' && Api.getCurrentUser) {
+            const user = Api.getCurrentUser();
+            if (user) {
+                console.log('👤 Текущий пользователь из кэша:', {
+                    id: user.id,
+                    telegram_id: user.telegram_id,
+                    has_id: !!user.id,
+                    has_telegram_id: !!user.telegram_id
+                });
                 
-                // 2. Синхронизируем локальные данные с БД
-                // Если в БД статистика больше - используем её
-                if (dbUser.spin_count > state.spinCount) {
-                    state.spinCount = dbUser.spin_count;
-                }
-                if (dbUser.win_count > state.winCount) {
-                    state.winCount = dbUser.win_count;
-                }
-                if (dbUser.jackpots > state.jackpots) {
-                    state.jackpots = dbUser.jackpots;
+                // Если есть telegram_id но нет UUID
+                if (user.telegram_id && !user.id) {
+                    console.log('🔄 Синхронизация: запрашиваю данные по telegram_id...');
+                    
+                    const result = await Api.getUser(user.telegram_id);
+                    if (result.success) {
+                        console.log('✅ Получен полный профиль из БД:', result.user.id);
+                        // Обновляем локальные данные
+                        if (result.user.spin_count > state.spinCount) {
+                            state.spinCount = result.user.spin_count;
+                        }
+                        if (result.user.win_count > state.winCount) {
+                            state.winCount = result.user.win_count;
+                        }
+                        saveGameState();
+                    }
                 }
                 
-                // 3. Обновляем баланс из БД
-                state.balance = dbUser.balance || state.balance;
-                state.coins = dbUser.coins || state.coins;
-                
-                // 4. Сохраняем синхронизированные данные
-                saveGameState();
-                
-                // 5. Устанавливаем глобальную переменную
-                if (window.currentTelegramUser === null) {
-                    window.currentTelegramUser = dbUser;
-                }
+                updateUI();
             }
-        } else {
-            console.log('Telegram WebApp не обнаружен, используем локальные данные');
         }
-        
     } catch (error) {
-        console.error('Ошибка загрузки данных пользователя:', error);
-        // Используем локальные данные как fallback
+        console.log('API не доступен, используем локальные данные');
     }
-    
-    updateUI();
 }
 
 // Инициализация барабанов
