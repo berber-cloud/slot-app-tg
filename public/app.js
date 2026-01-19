@@ -358,8 +358,12 @@ async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncre
                 console.log('Обновление статистики для пользователя ID:', user.id);
                 
                 // ВАЖНО: передаем ВНУТРЕННИЙ ID пользователя (UUID из БД)
-                const result = await Api.updateStats(user.id, spinIncrement, winIncrement, jackpotIncrement);
+               // const result = await Api.updateStats(user.id, spinIncrement, winIncrement, jackpotIncrement);
                 
+                // Вместо user.id передавайте telegram_id
+                const userIdToUpdate = user.telegram_id || user.id;
+                const result = await Api.updateStats(userIdToUpdate, spinIncrement, winIncrement, jackpotIncrement);
+
                 if (result.success) {
                     console.log('✅ Статистика обновлена в БД:', result.user);
                 } else {
