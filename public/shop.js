@@ -18,6 +18,10 @@ let selectedGift = null;
 let giftsList = [];
 
 async function init() {
+    // В начале функции init()
+console.log('Shop init - Api доступен?', typeof Api);
+console.log('Shop init - Пользователь:', Api.getCurrentUser());
+console.log('Shop init - Telegram доступен?', !!window.Telegram);
     // Сначала ждем инициализации пользователя
     await ensureUserInitialized();
     
