@@ -13,29 +13,56 @@ exports.handler = async (event, context) => {
     };
 
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: 'CORS preflight' })
-        };
+        return { statusCode: 200, headers, body: JSON.stringify({ message: 'CORS preflight' }) };
     }
 
     try {
-        // Получаем ID из URL (может быть telegramId или userId)
-        const { telegramId } = event.pathParameters || {};
+        // ВАЖНО: Получаем ID из пути - разные способы для Netlify
+        let userId = null;
         
-        console.log('🔍 user-get вызван с параметром:', telegramId);
+        // Способ 1: Из pathParameters (обычный способ)
+        if (event.pathParameters && event.pathParameters.telegramId) {
+            userId = event.pathParameters.telegramId;
+        }
+        // Способ 2: Из queryStringParameters (через ?id=...)
+        else if (event.queryStringParameters && event.queryStringParameters.id) {
+            userId = event.queryStringParameters.id;
+        }
+        // Способ 3: Из самого пути (вручную парсим)
+        else if (event.path) {
+            // Пример пути: /.netlify/functions/user-get/5962149453
+            const pathParts = event.path.split('/');
+            userId = pathParts[pathParts.length - 1];
+            
+            // Если это не ID (например, "user-get"), то пробуем предпоследнюю часть
+            if (userId === 'user-get' && pathParts.length > 3) {
+                userId = pathParts[pathParts.length - 2];
+            }
+        }
 
-        if (!telegramId) {
+        console.log('🔍 user-get вызван. Путь:', event.path);
+        console.log('🔍 Полученный ID:', userId);
+        console.log('🔍 Все параметры:', {
+            path: event.path,
+            pathParameters: event.pathParameters,
+            queryStringParameters: event.queryStringParameters,
+            rawPath: event.rawPath
+        });
+
+        if (!userId || userId === 'user-get') {
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ 
                     success: false, 
-                    error: 'ID is required' 
+                    error: 'ID is required',
+                    hint: 'Используйте: /api/user-get/YOUR_ID'
                 })
             };
         }
+
+        // ДАЛЕЕ ВАШ КОД ПОИСКА ПОЛЬЗОВАТЕЛЯ...
+        // [оставьте весь остальной код без изменений]
 
         // Пробуем найти пользователя разными способами
         let user = null;
