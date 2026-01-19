@@ -347,61 +347,51 @@ async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncre
     
     // 2. Сохраняем локально
     saveGameState();
+    updateUI();
     
     // 3. Обновляем через API если доступно
     try {
         if (typeof Api !== 'undefined' && Api.updateStats) {
-            // Пытаемся получить ID пользователя разными способами
-            let userId = null;
+            const user = Api.getCurrentUser();
             
-            // Способ 1: Из глобальной переменной
-            if (window.currentTelegramUser && window.currentTelegramUser.id) {
-                userId = window.currentTelegramUser.id;
-            }
-            // Способ 2: Из Api
-            else if (Api.getCurrentUser) {
-                const user = Api.getCurrentUser();
-                if (user && user.id) {
-                    userId = user.id;
-                }
-            }
-            // Способ 3: Из Telegram
-            else if (window.Telegram && window.Telegram.WebApp) {
-                const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
-                if (tgUser && tgUser.id) {
-                    // Если нет ID в БД, используем telegram_id для поиска
-                    userId = tgUser.id.toString();
-                }
-            }
-            
-            if (userId) {
-                console.log('Обновление статистики через API для userId:', userId);
-                const result = await Api.updateStats(userId, spinIncrement, winIncrement, jackpotIncrement);
+            if (user && user.id) {
+                console.log('Обновление статистики для пользователя ID:', user.id);
+                
+                // ВАЖНО: передаем ВНУТРЕННИЙ ID пользователя (UUID из БД)
+                const result = await Api.updateStats(user.id, spinIncrement, winIncrement, jackpotIncrement);
                 
                 if (result.success) {
-                    console.log('Статистика обновлена в БД:', result.user);
-                    // Обновляем локальные данные из ответа сервера
-                    if (result.user) {
-                        state.spinCount = result.user.spin_count || state.spinCount;
-                        state.winCount = result.user.win_count || state.winCount;
-                        state.jackpots = result.user.jackpots || state.jackpots;
-                        saveGameState();
-                    }
+                    console.log('✅ Статистика обновлена в БД:', result.user);
                 } else {
-                    console.error('Ошибка обновления статистики:', result.error);
+                    console.error('❌ Ошибка обновления статистики:', result.error);
                 }
             } else {
-                console.log('Не найден userId для обновления статистики');
+                console.log('⚠️ Пользователь не найден для обновления статистики');
             }
         }
     } catch (error) {
         console.log('API обновление не удалось:', error);
-        // Не показываем ошибку пользователю, просто логируем
     }
-    
-    // 4. Всегда обновляем UI
-    updateUI();
 }
+
+// Отладочная функция для проверки
+function debugUserInfo() {
+    const user = Api.getCurrentUser();
+    console.log('=== DEBUG USER INFO ===');
+    console.log('User from Api:', user);
+    console.log('User ID:', user?.id);
+    console.log('Telegram ID:', user?.telegram_id);
+    console.log('Balance:', user?.balance);
+    console.log('Stats:', { 
+        spins: user?.spin_count, 
+        wins: user?.win_count, 
+        jackpots: user?.jackpots 
+    });
+    console.log('========================');
+}
+
+// Вызовите где-нибудь для проверки
+debugUserInfo();
 
 // Основная функция вращения
 async function spin() {

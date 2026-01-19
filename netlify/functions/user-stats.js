@@ -64,26 +64,43 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Обновляем статистику
-        const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({
-                spin_count: user.spin_count + spin_count,
-                win_count: user.win_count + win_count,
-                jackpots: user.jackpots + jackpots,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', userId)
-            .select()
-            .single();
+        // Замените весь блок после строки 55:
 
-        if (updateError) throw updateError;
+// Обновляем статистику
+const updateData = {
+    updated_at: new Date().toISOString()
+};
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ success: true, user: updatedUser })
-        };
+// Добавляем только те поля, которые переданы (инкрементируем)
+if (spin_count !== 0) {
+    updateData.spin_count = user.spin_count + spin_count;
+}
+if (win_count !== 0) {
+    updateData.win_count = user.win_count + win_count;
+}
+if (jackpots !== 0) {
+    updateData.jackpots = user.jackpots + jackpots;
+}
+
+// Логируем что обновляем
+console.log('Updating user stats:', {
+    userId,
+    currentStats: { spin: user.spin_count, win: user.win_count, jackpots: user.jackpots },
+    increments: { spin_count, win_count, jackpots },
+    updateData
+});
+
+const { data: updatedUser, error: updateError } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('id', userId)  // Ищем по ВНУТРЕННЕМУ ID (UUID)
+    .select()
+    .single();
+
+if (updateError) {
+    console.error('Supabase update error:', updateError);
+    throw updateError;
+}
 
     } catch (error) {
         console.error('Error:', error);

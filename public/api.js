@@ -149,6 +149,7 @@ class Api {
                 userCache.updated_at = new Date().toISOString();
                 localStorage.setItem('userData', JSON.stringify(userCache));
             }
+
             
             return data;
         } catch (error) {
@@ -163,6 +164,27 @@ class Api {
             }
             return { success: false, error: 'Ошибка обновления' };
         }
+
+        // В методе updateStats класса Api добавьте после строки ~150:
+console.log('Api.updateStats вызван с параметрами:', { userId, spinCount, winCount, jackpots });
+
+const response = await fetch(`${API_BASE_URL}/user-stats/${userId}`, {
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    },
+    body: JSON.stringify({ 
+        spin_count: spinCount, 
+        win_count: winCount, 
+        jackpots: jackpots 
+    })
+});
+
+console.log('Response status:', response.status);
+const data = await response.json();
+console.log('Response data:', data);
+return data;
     }
     
     // Покупка подарка (нужно создать функцию user-gifts.js аналогично)
