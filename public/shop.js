@@ -18,10 +18,43 @@ let selectedGift = null;
 let giftsList = [];
 
 async function init() {
+    // Сначала ждем инициализации пользователя
+    await ensureUserInitialized();
+    
     await loadUserData();
     await loadGifts();
     setupEventListeners();
     renderGifts();
+}
+
+async function ensureUserInitialized() {
+    if (!Api.getCurrentUser()) {
+        // Если в Telegram - инициализируем через Telegram
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            if (tgUser) {
+                await Api.initUser({
+                    id: tgUser.id.toString(),
+                    username: tgUser.username || 'Гость',
+                    first_name: tgUser.first_name || '',
+                    last_name: tgUser.last_name || '',
+                    photo_url: tgUser.photo_url || ''
+                });
+            }
+        }
+        // Если не в Telegram - создаем гостя
+        else {
+            const guestId = `guest_${Date.now()}`;
+            await Api.initUser({
+                id: guestId,
+                username: 'Гость',
+                first_name: '',
+                last_name: '',
+                photo_url: ''
+            });
+        }
+    }
 }
 
 async function loadUserData() {
@@ -84,8 +117,9 @@ function openPurchaseModal(gift) {
     const user = Api.getCurrentUser();
     
     // Проверяем баланс
-    const userBalance = gift.currency === 'stars' ? (user.balance || 0) : (user.coins || 0);
-    const hasEnough = userBalance >= gift.price;
+    const userBalance = user ? (gift.currency === 'stars' ? (user.balance || 0) : (user.coins || 0)) : 0;
+const hasEnough = userBalance >= gift.price;
+
     
     elements.modalTitle.textContent = `Покупка: ${gift.name}`;
     
@@ -100,7 +134,7 @@ function openPurchaseModal(gift) {
             </div>
         </div>
         <div class="modal-balance-check">
-            <p>Ваш баланс: ${userBalance} ${gift.currency === 'stars' ? 'звёзд' : 'монет'}</p>
+            <p>Ваш баланс: ${user ? userBalance : 0} ${gift.currency === 'stars' ? 'звёзд' : 'монет'}</p>
             <p class="${hasEnough ? 'sufficient' : 'insufficient'}">
                 ${hasEnough ? '✅ Достаточно средств' : '❌ Недостаточно средств'}
             </p>
@@ -115,7 +149,10 @@ async function purchaseGift() {
     if (!selectedGift) return;
     
     const user = Api.getCurrentUser();
-    if (!user) return;
+    if (!user) {
+        showNotification('❌ Не удалось загрузить пользователя', 3000);
+        return;
+    }
     
     try {
         // Обновляем баланс

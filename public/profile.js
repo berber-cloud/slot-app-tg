@@ -119,7 +119,18 @@ function updateUIFromGameState(gameState) {
 }
 
 function updateUIFromUser(user) {
-    if (!user) return;
+    // В функции updateUIFromUser добавьте в начало:
+if (!user) {
+    console.log('Пользователь не найден, использую гостя');
+    user = {
+        username: 'Гость',
+        balance: 0,
+        coins: 0,
+        spin_count: 0,
+        win_count: 0,
+        jackpots: 0
+    };
+}
     
     // Баланс
     if (elements.balance) elements.balance.textContent = user.balance || 0;

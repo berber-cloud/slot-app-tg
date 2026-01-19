@@ -84,7 +84,10 @@ function setupEventListeners() {
 // Имитация покупки звёзд (в реальном приложении через Telegram Stars API)
 async function buyStars(amount) {
     const user = Api.getCurrentUser();
-    if (!user) return;
+    if (!user) {
+        showNotification('❌ Пользователь не найден. Перезагрузите страницу.', 3000);
+        return;
+    }
     
     try {
         // В реальном приложении здесь был бы вызов Telegram Stars API
@@ -103,7 +106,10 @@ async function buyStars(amount) {
 // Имитация покупки монет (в реальном приложении через TON)
 async function buyCoins(amount) {
     const user = Api.getCurrentUser();
-    if (!user) return;
+   if (!user) {
+        showNotification('❌ Пользователь не найден. Перезагрузите страницу.', 3000);
+        return;
+    }
     
     try {
         // В реальном приложении здесь была бы транзакция TON

@@ -333,33 +333,62 @@ class Api {
         
         return { success: true, user };
     }
+
+    // Добавьте в class Api (перед последней закрывающей скобкой)
+static async waitForUser(timeout = 5000) {
+    return new Promise((resolve) => {
+        const checkUser = () => {
+            const user = this.getCurrentUser();
+            if (user) {
+                resolve(user);
+            } else if (timeout <= 0) {
+                resolve(this.createLocalUser({}));
+            } else {
+                timeout -= 100;
+                setTimeout(checkUser, 100);
+            }
+        };
+        checkUser();
+    });
+}
 }
 
 // Инициализация Telegram Web App
-document.addEventListener('DOMContentLoaded', () => {
+// Инициализация при загрузке (в конце api.js)
+document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // Пытаемся инициализировать через Telegram
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
             
-            // Инициализация пользователя
-            const initUser = async () => {
-                const user = tg.initDataUnsafe?.user;
-                if (user) {
-                    await Api.initUser({
-                        id: user.id.toString(),
-                        username: user.username,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        photo_url: user.photo_url
-                    });
-                }
-            };
-            
-            initUser();
+            const user = tg.initDataUnsafe?.user;
+            if (user) {
+                await Api.initUser({
+                    id: user.id.toString(),
+                    username: user.username,
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    photo_url: user.photo_url
+                });
+            }
+        } 
+        // Если не в Telegram - создаем гостя
+        else {
+            console.log('Telegram Web App не доступен, создаю гостя');
+            const guestId = `guest_${Date.now()}`;
+            await Api.initUser({
+                id: guestId,
+                username: 'Гость (Локально)',
+                first_name: '',
+                last_name: '',
+                photo_url: ''
+            });
         }
     } catch (error) {
-        console.log('Telegram Web App не доступен');
+        console.log('Инициализация не удалась:', error);
+        // Создаем локального пользователя как fallback
+        Api.createLocalUser({ id: `fallback_${Date.now()}` });
     }
 });
