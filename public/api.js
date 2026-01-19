@@ -122,70 +122,40 @@ class Api {
     
     // Обновление статистики
     static async updateStats(userId, spinCount = 0, winCount = 0, jackpots = 0) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/user-stats/${userId}`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    spin_count: spinCount, 
-                    win_count: winCount, 
-                    jackpots: jackpots 
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.success && userCache && userCache.id === userId) {
-                userCache.spin_count += spinCount;
-                userCache.win_count += winCount;
-                userCache.jackpots += jackpots;
-                userCache.updated_at = new Date().toISOString();
-                localStorage.setItem('userData', JSON.stringify(userCache));
-            }
-
-            
-            return data;
-        } catch (error) {
-            console.error('Ошибка обновления статистики:', error);
-            // Fallback на localStorage
-            if (userCache && userCache.id === userId) {
-                userCache.spin_count += spinCount;
-                userCache.win_count += winCount;
-                userCache.jackpots += jackpots;
-                localStorage.setItem('userData', JSON.stringify(userCache));
-                return { success: true };
-            }
-            return { success: false, error: 'Ошибка обновления' };
+    try {
+        console.log('🔧 Api.updateStats вызван с userId:', userId);
+        console.log('📊 Параметры:', { spinCount, winCount, jackpots });
+        
+        const response = await fetch(`${API_BASE_URL}/user-stats/${userId}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+                spin_count: spinCount, 
+                win_count: winCount, 
+                jackpots: jackpots 
+            })
+        });
+        
+        console.log('📨 Ответ сервера:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Ошибка HTTP:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-
-        // В методе updateStats класса Api добавьте после строки ~150:
-console.log('Api.updateStats вызван с параметрами:', { userId, spinCount, winCount, jackpots });
-
-const response = await fetch(`${API_BASE_URL}/user-stats/${userId}`, {
-    method: 'POST',
-    headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    },
-    body: JSON.stringify({ 
-        spin_count: spinCount, 
-        win_count: winCount, 
-        jackpots: jackpots 
-    })
-});
-
-console.log('Response status:', response.status);
-const data = await response.json();
-console.log('Response data:', data);
-return data;
+        
+        const data = await response.json();
+        console.log('📊 Данные ответа:', data);
+        return data;
+        
+    } catch (error) {
+        console.error('💥 Ошибка в Api.updateStats:', error);
+        throw error;
     }
+}
     
     // Покупка подарка (нужно создать функцию user-gifts.js аналогично)
     static async purchaseGift(userId, giftId) {
@@ -316,19 +286,31 @@ return data;
     }
     
     // Получение текущего пользователя
-    static getCurrentUser() {
-        if (userCache) {
-            return userCache;
-        }
-        
-        const localData = localStorage.getItem('userData');
-        if (localData) {
-            userCache = JSON.parse(localData);
-            return userCache;
-        }
-        
-        return null;
+    // В методе getCurrentUser() добавьте:
+static getCurrentUser() {
+    if (userCache) {
+        console.log('👤 getCurrentUser возвращает (cache):', {
+            id: userCache.id,
+            telegram_id: userCache.telegram_id,
+            username: userCache.username
+        });
+        return userCache;
     }
+    
+    const localData = localStorage.getItem('userData');
+    if (localData) {
+        userCache = JSON.parse(localData);
+        console.log('👤 getCurrentUser возвращает (localStorage):', {
+            id: userCache.id,
+            telegram_id: userCache.telegram_id,
+            username: userCache.username
+        });
+        return userCache;
+    }
+    
+    console.log('👤 getCurrentUser: пользователь не найден');
+    return null;
+}
     
     // Создание локального пользователя (fallback)
     static createLocalUser(userData) {

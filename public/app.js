@@ -336,7 +336,6 @@ function spinReel(reel, finalSymbol, delay = 0) {
     });
 }
 
-// Обновление статистики
 async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncrement = 0) {
     console.log('Обновление статистики:', { spinIncrement, winIncrement, jackpotIncrement });
     
@@ -355,22 +354,25 @@ async function updateGameStats(spinIncrement = 0, winIncrement = 0, jackpotIncre
             const user = Api.getCurrentUser();
             
             if (user && user.id) {
-                console.log('Обновление статистики для пользователя ID:', user.id);
+                // ВАЖНО: передаем ТОЛЬКО UUID, не telegram_id!
+                console.log('Обновление статистики для пользователя UUID:', user.id);
+                console.log('Telegram ID пользователя:', user.telegram_id);
                 
-                // ВАЖНО: передаем ВНУТРЕННИЙ ID пользователя (UUID из БД)
-               // const result = await Api.updateStats(user.id, spinIncrement, winIncrement, jackpotIncrement);
+                const result = await Api.updateStats(
+                    user.id, // ТОЛЬКО UUID!
+                    spinIncrement, 
+                    winIncrement, 
+                    jackpotIncrement
+                );
                 
-                // Вместо user.id передавайте telegram_id
-                const userIdToUpdate = user.telegram_id || user.id;
-                const result = await Api.updateStats(userIdToUpdate, spinIncrement, winIncrement, jackpotIncrement);
-
                 if (result.success) {
-                    console.log('✅ Статистика обновлена в БД:', result.user);
+                    console.log('✅ Статистика обновлена в БД');
                 } else {
                     console.error('❌ Ошибка обновления статистики:', result.error);
                 }
             } else {
-                console.log('⚠️ Пользователь не найден для обновления статистики');
+                console.log('⚠️ Пользователь не найден или нет UUID');
+                console.log('Текущий user object:', user);
             }
         }
     } catch (error) {
