@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "emoji-slots",
+  "compatibility_date": "2024-01-01",
+  "main": "functions/_middleware.js",
+  "pages_build_output_dir": ".",
+  
+  "vars": {
+    "APP_NAME": "Emoji Slots",
+    "DEFAULT_BALANCE": "100"
+  },
+  
+  "observability": {
+    "enabled": true
+  }
+}

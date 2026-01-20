@@ -1,19 +1,5 @@
-exports.handler = async (event, context) => {
-    const headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Content-Type': 'application/json'
-    };
-
-    if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: 'CORS preflight' })
-        };
-    }
-
+// functions/gifts.js
+export async function onRequestGet() {
     const gifts = [
         {
             id: 'gift_1',
@@ -80,9 +66,20 @@ exports.handler = async (event, context) => {
         }
     ];
 
-    return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ success: true, gifts })
-    };
-};
+    return Response.json({
+        success: true,
+        gifts: gifts
+    }, {
+        headers: { 'Access-Control-Allow-Origin': '*' }
+    });
+}
+
+export async function onRequestOptions() {
+    return new Response(null, {
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        }
+    });
+}
