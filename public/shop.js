@@ -1,4 +1,5 @@
-// shop.js
+// shop.js - Исправленная версия
+
 const elements = {
     balance: document.getElementById('balance'),
     coins: document.getElementById('coins'),
@@ -18,47 +19,15 @@ let selectedGift = null;
 let giftsList = [];
 
 async function init() {
-    // В начале функции init()
-console.log('Shop init - Api доступен?', typeof Api);
-console.log('Shop init - Пользователь:', Api.getCurrentUser());
-console.log('Shop init - Telegram доступен?', !!window.Telegram);
-    // Сначала ждем инициализации пользователя
-    await ensureUserInitialized();
-    
+    // Синхронизируем пользователя
+    await Api.syncUser();
     await loadUserData();
     await loadGifts();
     setupEventListeners();
     renderGifts();
-}
-
-async function ensureUserInitialized() {
-    if (!Api.getCurrentUser()) {
-        // Если в Telegram - инициализируем через Telegram
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            const tgUser = tg.initDataUnsafe?.user;
-            if (tgUser) {
-                await Api.initUser({
-                    id: tgUser.id.toString(),
-                    username: tgUser.username || 'Гость',
-                    first_name: tgUser.first_name || '',
-                    last_name: tgUser.last_name || '',
-                    photo_url: tgUser.photo_url || ''
-                });
-            }
-        }
-        // Если не в Telegram - создаем гостя
-        else {
-            const guestId = `guest_${Date.now()}`;
-            await Api.initUser({
-                id: guestId,
-                username: 'Гость',
-                first_name: '',
-                last_name: '',
-                photo_url: ''
-            });
-        }
-    }
+    
+    // Подписываемся на обновления баланса
+    window.updateGlobalUI();
 }
 
 async function loadUserData() {
@@ -71,7 +40,10 @@ async function loadUserData() {
 function updateUIFromUser(user) {
     if (elements.balance) elements.balance.textContent = user.balance || 0;
     if (elements.coins) elements.coins.textContent = user.coins || 0;
-    if (elements.giftsCount) elements.giftsCount.textContent = user.gifts ? user.gifts.length : 0;
+    if (elements.giftsCount) {
+        const giftsCount = user.gifts ? user.gifts.length : 0;
+        elements.giftsCount.textContent = giftsCount;
+    }
 }
 
 async function loadGifts() {
@@ -83,12 +55,18 @@ async function loadGifts() {
 
 function renderGifts() {
     const user = Api.getCurrentUser();
-    const userGifts = user ? user.gifts || [] : [];
+    if (!user) {
+        console.error('❌ Пользователь не найден');
+        return;
+    }
+    
+    const userGifts = user.gifts || [];
+    const ownedGiftIds = userGifts.map(g => g.gift_id || g.id);
     
     elements.giftsGrid.innerHTML = '';
     
     giftsList.forEach(gift => {
-        const isOwned = userGifts.some(g => g.id === gift.id);
+        const isOwned = ownedGiftIds.includes(gift.id);
         
         const giftCard = document.createElement('div');
         giftCard.className = `gift-card ${isOwned ? 'owned' : ''}`;
@@ -120,10 +98,14 @@ function openPurchaseModal(gift) {
     selectedGift = gift;
     const user = Api.getCurrentUser();
     
+    if (!user) {
+        showNotification('❌ Пользователь не найден', 3000);
+        return;
+    }
+    
     // Проверяем баланс
-    const userBalance = user ? (gift.currency === 'stars' ? (user.balance || 0) : (user.coins || 0)) : 0;
-const hasEnough = userBalance >= gift.price;
-
+    const userBalance = gift.currency === 'stars' ? (user.balance || 0) : (user.coins || 0);
+    const hasEnough = userBalance >= gift.price;
     
     elements.modalTitle.textContent = `Покупка: ${gift.name}`;
     
@@ -138,7 +120,7 @@ const hasEnough = userBalance >= gift.price;
             </div>
         </div>
         <div class="modal-balance-check">
-            <p>Ваш баланс: ${user ? userBalance : 0} ${gift.currency === 'stars' ? 'звёзд' : 'монет'}</p>
+            <p>Ваш баланс: ${userBalance} ${gift.currency === 'stars' ? 'звёзд' : 'монет'}</p>
             <p class="${hasEnough ? 'sufficient' : 'insufficient'}">
                 ${hasEnough ? '✅ Достаточно средств' : '❌ Недостаточно средств'}
             </p>
@@ -153,38 +135,51 @@ async function purchaseGift() {
     if (!selectedGift) return;
     
     const user = Api.getCurrentUser();
-    if (!user) {
-        showNotification('❌ Не удалось загрузить пользователя', 3000);
+    if (!user || !user.id) {
+        showNotification('❌ Пользователь не найден', 3000);
         return;
     }
     
     try {
-        // Обновляем баланс
-        const starsDelta = selectedGift.currency === 'stars' ? -selectedGift.price : 0;
-        const coinsDelta = selectedGift.currency === 'coins' ? -selectedGift.price : 0;
+        elements.modalConfirm.disabled = true;
+        elements.modalConfirm.textContent = 'Покупка...';
         
-        await Api.updateBalance(user.id, starsDelta, coinsDelta);
+        // Используем новый метод purchaseGift
+        const result = await Api.purchaseGift(
+            user.id,
+            selectedGift.id,
+            selectedGift.price,
+            selectedGift.currency
+        );
         
-        // Добавляем подарок
-        await Api.purchaseGift(user.id, selectedGift.id);
-        
-        showNotification(`🎁 Вы купили "${selectedGift.name}"!`, 3000);
-        
-        // Обновляем UI
-        updateUIFromUser(Api.getCurrentUser());
-        renderGifts();
-        
-        closePurchaseModal();
+        if (result.success) {
+            showNotification(`🎁 Вы купили "${selectedGift.name}"!`, 3000);
+            
+            // Обновляем UI
+            await Api.syncUser();
+            updateUIFromUser(Api.getCurrentUser());
+            renderGifts();
+            
+            closePurchaseModal();
+        } else {
+            showNotification(`❌ ${result.error || 'Ошибка покупки'}`, 3000);
+            elements.modalConfirm.disabled = false;
+            elements.modalConfirm.textContent = 'Купить';
+        }
         
     } catch (error) {
         console.error('Ошибка покупки:', error);
-        showNotification('❌ Ошибка покупки', 2000);
+        showNotification('❌ Ошибка покупки', 3000);
+        elements.modalConfirm.disabled = false;
+        elements.modalConfirm.textContent = 'Купить';
     }
 }
 
 function closePurchaseModal() {
     elements.purchaseModal.classList.remove('show');
     selectedGift = null;
+    elements.modalConfirm.disabled = false;
+    elements.modalConfirm.textContent = 'Купить';
 }
 
 function showNotification(message, duration = 3000) {
@@ -201,7 +196,6 @@ function setupEventListeners() {
     elements.modalCancel.addEventListener('click', closePurchaseModal);
     elements.modalConfirm.addEventListener('click', purchaseGift);
     
-    // Закрытие по клику вне модального окна
     elements.purchaseModal.addEventListener('click', (e) => {
         if (e.target === elements.purchaseModal) {
             closePurchaseModal();

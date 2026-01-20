@@ -1,4 +1,5 @@
-// wallet.js
+// wallet.js - с платежами Telegram Stars
+
 const elements = {
     balance: document.getElementById('balance'),
     coins: document.getElementById('coins'),
@@ -8,13 +9,10 @@ const elements = {
     notificationText: document.getElementById('notificationText')
 };
 
-// Для TON Connect
-let tonConnectUI = null;
-
 async function init() {
+    await Api.syncUser();
     await loadUserData();
     setupEventListeners();
-    initTONConnect();
 }
 
 async function loadUserData() {
@@ -29,27 +27,6 @@ function updateUIFromUser(user) {
     if (elements.coins) elements.coins.textContent = user.coins || 0;
 }
 
-function initTONConnect() {
-    try {
-        // Инициализация TON Connect UI
-        tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: 'https://your-app.com/tonconnect-manifest.json',
-            buttonRootId: 'connectWallet'
-        });
-        
-        // Проверяем статус подключения
-        tonConnectUI.connectionRestored.then((connected) => {
-            if (connected) {
-                elements.coinsPacks.style.display = 'block';
-                elements.connectWallet.style.display = 'none';
-            }
-        });
-        
-    } catch (error) {
-        console.log('TON Connect не доступен:', error);
-    }
-}
-
 function setupEventListeners() {
     // Обработчики для пакетов Stars
     document.querySelectorAll('.pack-card[data-stars]').forEach(card => {
@@ -59,43 +36,33 @@ function setupEventListeners() {
         });
     });
     
-    // Обработчики для пакетов Coins (после подключения TON)
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-buy')) {
-            const card = e.target.closest('.pack-card[data-coins]');
-            if (card) {
-                const coins = parseInt(card.dataset.coins);
-                buyCoins(coins);
-            }
-        }
-    });
-    
-    // Имитация покупки через Telegram Stars
+    // Обработчики для TON (заглушка)
     if (elements.connectWallet) {
         elements.connectWallet.addEventListener('click', () => {
-            showNotification('Функция пополнения через TON будет доступна позже', 3000);
-            // В реальном приложении здесь будет подключение кошелька
+            showNotification('Функция TON будет доступна позже', 3000);
             elements.coinsPacks.style.display = 'block';
             elements.connectWallet.style.display = 'none';
         });
     }
 }
 
-// Имитация покупки звёзд (в реальном приложении через Telegram Stars API)
+// Покупка через Telegram Stars
 async function buyStars(amount) {
-    const user = Api.getCurrentUser();
-    if (!user) {
-        showNotification('❌ Пользователь не найден. Перезагрузите страницу.', 3000);
-        return;
-    }
-    
     try {
-        // В реальном приложении здесь был бы вызов Telegram Stars API
-        // Сейчас имитируем успешную покупку
-        await Api.updateBalance(user.id, amount, 0);
+        showNotification(`🔄 Открываем платеж на ${amount} звёзд...`, 2000);
         
-        showNotification(`✅ Успешно куплено ${amount} звёзд!`, 3000);
-        updateUIFromUser(Api.getCurrentUser());
+        const result = await Api.processStarsPayment(amount, `Пополнение на ${amount} звёзд`);
+        
+        if (result.success) {
+            showNotification(`✅ Успешно куплено ${amount} звёзд!`, 3000);
+            
+            // Синхронизируем данные
+            await Api.syncUser();
+            updateUIFromUser(Api.getCurrentUser());
+            
+        } else {
+            showNotification(`❌ ${result.error || 'Ошибка платежа'}`, 3000);
+        }
         
     } catch (error) {
         console.error('Ошибка покупки:', error);
@@ -103,26 +70,9 @@ async function buyStars(amount) {
     }
 }
 
-// Имитация покупки монет (в реальном приложении через TON)
-async function buyCoins(amount) {
-    const user = Api.getCurrentUser();
-   if (!user) {
-        showNotification('❌ Пользователь не найден. Перезагрузите страницу.', 3000);
-        return;
-    }
-    
-    try {
-        // В реальном приложении здесь была бы транзакция TON
-        // Сейчас имитируем успешную покупку
-        await Api.updateBalance(user.id, 0, amount);
-        
-        showNotification(`✅ Успешно куплено ${amount} монет!`, 3000);
-        updateUIFromUser(Api.getCurrentUser());
-        
-    } catch (error) {
-        console.error('Ошибка покупки:', error);
-        showNotification('❌ Ошибка при покупке', 2000);
-    }
+// Альтернативный способ - через инвойс
+function buyStarsWithInvoice(amount) {
+    Api.showStarsInvoice(amount, `Пополнение на ${amount} звёзд`);
 }
 
 function showNotification(message, duration = 3000) {

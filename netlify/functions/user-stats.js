@@ -25,7 +25,6 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Получаем ID из query параметров
         const query = event.queryStringParameters || {};
         const userId = query.userId || query.id;
         
@@ -45,44 +44,15 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // Ищем пользователя по telegram_id или UUID
-        let user = null;
-
-        // Сначала по telegram_id
-        const { data: userByTelegram, error: error1 } = await supabase
+        // Получаем ТЕКУЩИЕ данные пользователя
+        const { data: currentUser, error: fetchError } = await supabase
             .from('users')
-            .select('*')
-            .eq('telegram_id', userId)
+            .select('spin_count, win_count, jackpots')
+            .or(`telegram_id.eq.${userId},id.eq.${userId}`)
             .single();
 
-        // Если не нашли, по id (UUID)
-        if (error1 && error1.code === 'PGRST116') {
-            console.log('Не найден по telegram_id, пробуем по UUID...');
-            const { data: userById, error: error2 } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', userId)
-                .single();
-            
-            if (error2) {
-                console.error('❌ Пользователь не найден:', error2.message);
-                return {
-                    statusCode: 404,
-                    headers,
-                    body: JSON.stringify({ 
-                        success: false, 
-                        error: 'Пользователь не найден' 
-                    })
-                };
-            }
-            user = userById;
-        } else if (error1) {
-            throw error1;
-        } else {
-            user = userByTelegram;
-        }
-
-        if (!user) {
+        if (fetchError) {
+            console.error('❌ Пользователь не найден:', fetchError);
             return {
                 statusCode: 404,
                 headers,
@@ -93,27 +63,40 @@ exports.handler = async (event, context) => {
             };
         }
 
-        console.log('👤 Найден пользователь:', { id: user.id, telegram_id: user.telegram_id });
+        console.log('📊 Текущая статистика:', {
+            spin: currentUser.spin_count,
+            win: currentUser.win_count,
+            jackpots: currentUser.jackpots
+        });
 
-        // Обновляем статистику
+        // Вычисляем НОВЫЕ значения
+        const newSpinCount = (currentUser.spin_count || 0) + spin_count;
+        const newWinCount = (currentUser.win_count || 0) + win_count;
+        const newJackpots = (currentUser.jackpots || 0) + jackpots;
+
+        console.log('📈 Новая статистика:', {
+            spin: newSpinCount,
+            win: newWinCount,
+            jackpots: newJackpots
+        });
+
         const updateData = {
-            spin_count: (user.spin_count || 0) + spin_count,
-            win_count: (user.win_count || 0) + win_count,
-            jackpots: (user.jackpots || 0) + jackpots,
+            spin_count: newSpinCount,
+            win_count: newWinCount,
+            jackpots: newJackpots,
             updated_at: new Date().toISOString()
         };
 
-        console.log('📝 Обновление статистики:', updateData);
-
+        // Обновляем пользователя по ID из результата поиска
         const { data: updatedUser, error: updateError } = await supabase
             .from('users')
             .update(updateData)
-            .eq('id', user.id)
+            .or(`telegram_id.eq.${userId},id.eq.${userId}`)
             .select()
             .single();
 
         if (updateError) {
-            console.error('❌ Ошибка обновления в Supabase:', updateError);
+            console.error('❌ Ошибка обновления:', updateError);
             throw updateError;
         }
 
@@ -137,8 +120,7 @@ exports.handler = async (event, context) => {
             headers,
             body: JSON.stringify({ 
                 success: false, 
-                error: error.message,
-                details: 'Internal server error' 
+                error: error.message
             })
         };
     }
