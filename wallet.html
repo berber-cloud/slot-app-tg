@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пополнение счета - Emoji Slots</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+       
+        <header class="header">
+            <div class="balance-container">
+                <div class="balance">
+                    <i class="fas fa-star"></i>
+                    <span id="balance">0</span>
+                </div>
+                <div class="balance coins-balance">
+                    <i class="fas fa-coins"></i>
+                    <span id="coins">0</span>
+                </div>
+            </div>
+            
+            <div class="logo">
+                <h1><span class="logo-gradient">💰 Пополнение</span></h1>
+                <p class="subtitle">Пополни счет Telegram Stars или TON</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="wallet-container">
+                <div class="wallet-section">
+                    <h3><i class="fas fa-star"></i> Telegram Stars</h3>
+                    <p class="section-description">Пополните счет звёздами через Telegram</p>
+                    
+                    <div class="stars-packs">
+                        <div class="pack-card" data-stars="50">
+                            <div class="pack-icon">⭐</div>
+                            <div class="pack-info">
+                                <h4>50 Stars</h4>
+                                <p class="pack-price">~0.5 USD</p>
+                            </div>
+                            <button class="btn-buy">Купить</button>
+                        </div>
+                        
+                        <div class="pack-card" data-stars="100">
+                            <div class="pack-icon">⭐</div>
+                            <div class="pack-info">
+                                <h4>100 Stars</h4>
+                                <p class="pack-price">~1 USD</p>
+                            </div>
+                            <button class="btn-buy">Купить</button>
+                        </div>
+                        
+                        <div class="pack-card" data-stars="500">
+                            <div class="pack-icon">⭐⭐⭐</div>
+                            <div class="pack-info">
+                                <h4>500 Stars</h4>
+                                <p class="pack-price">~5 USD</p>
+                            </div>
+                            <button class="btn-buy">Купить</button>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-info">
+                        <p><i class="fas fa-info-circle"></i> Звёзды конвертируются в игровую валюту 1:1</p>
+                    </div>
+                </div>
+                
+                <div class="wallet-section">
+                    <h3><i class="fas fa-coins"></i> TON Кошелек</h3>
+                    <p class="section-description">Подключите TON кошелек для покупки монет</p>
+                    
+                    <div class="ton-connect" id="tonConnect">
+                        <div class="ton-info">
+                            <div class="ton-icon">💎</div>
+                            <div class="ton-details">
+                                <h4>Подключить TON кошелек</h4>
+                                <p>Купите монеты за TON</p>
+                            </div>
+                        </div>
+                        <button class="btn-connect" id="connectWallet">
+                            <i class="fas fa-plug"></i>
+                            Подключить
+                        </button>
+                    </div>
+                    
+                    <div class="coins-packs" id="coinsPacks" style="display: none;">
+                        <h4>Пакеты монет</h4>
+                        <div class="pack-card" data-coins="10">
+                            <div class="pack-icon">🪙</div>
+                            <div class="pack-info">
+                                <h4>10 Монет</h4>
+                                <p class="pack-price">~0.1 TON</p>
+                            </div>
+                            <button class="btn-buy">Купить</button>
+                        </div>
+                        
+                        <div class="pack-card" data-coins="50">
+                            <div class="pack-icon">🪙🪙</div>
+                            <div class="pack-info">
+                                <h4>50 Монет</h4>
+                                <p class="pack-price">~0.5 TON</p>
+                            </div>
+                            <button class="btn-buy">Купить</button>
+                        </div>
+                        
+                        <div class="pack-card" data-coins="100">
+                            <div class="pack-icon">🪙🪙🪙</div>
+                            <div class="pack-info">
+                                <h4>100 Монет</h4>
+                                <p class="pack-price">~1 TON</p>
+                            </div>
+                            <button class="btn-buy">Купить</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h4><i class="fas fa-question-circle"></i> Как это работает?</h4>
+                    <p>1. <strong>Telegram Stars</strong> - покупайте прямо в Telegram, звёзды автоматически конвертируются</p>
+                    <p>2. <strong>TON Кошелек</strong> - подключите кошелек для покупки специальных монет</p>
+                    <p>3. Монеты нужны для покупки эксклюзивных подарков в магазине</p>
+                    <p class="note">💡 Все транзакции безопасны и проходят через официальные системы Telegram и TON</p>
+                </div>
+            </div>
+        </main>
+        
+        <div class="notification" id="notification">
+            <span id="notificationText"></span>
+        </div>
+
+        <!-- Навигация внизу -->
+<nav class="navbar bottom-nav">
+    <a href="index.html" class="nav-item">
+        <i class="fas fa-dice"></i>
+        <span>Слоты</span>
+    </a>
+    <a href="shop.html" class="nav-item ">
+        <i class="fas fa-shopping-bag"></i>
+        <span>Магазин</span>
+    </a>
+    <a href="wallet.html" class="nav-item active">
+        <i class="fas fa-wallet"></i>
+        <span>Пополнить</span>
+    </a>
+    <a href="profile.html" class="nav-item">
+        <i class="fas fa-user"></i>
+        <span>Профиль</span>
+    </a>
+</nav>
+
+    </div>
+    
+    <!-- TON Connect SDK -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="api.js"></script>
+    <script src="wallet.js"></script>
+</body>
+</html>

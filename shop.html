@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин подарков - Emoji Slots</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        
+
+        <header class="header">
+            <div class="balance-container">
+                <div class="balance">
+                    <i class="fas fa-star"></i>
+                    <span id="balance">0</span>
+                </div>
+                <div class="balance coins-balance">
+                    <i class="fas fa-coins"></i>
+                    <span id="coins">0</span>
+                </div>
+            </div>
+            
+            <div class="logo">
+                <h1><span class="logo-gradient">🛍️ Магазин</span></h1>
+                <p class="subtitle">Покупай подарки за звёзды и монеты</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <i class="fas fa-gift"></i>
+                    <span id="giftsCount">0</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="shop-container">
+                <div class="category-title">
+                    <h3><i class="fas fa-flask"></i> Набор юного химика</h3>
+                    <p class="category-description">Коллекция запрещенных, но смешных предметов</p>
+                </div>
+                
+                <div class="gifts-grid" id="giftsGrid">
+                    <!-- Подарки будут загружены через JS -->
+                </div>
+                
+                <div class="instructions">
+                    <h4><i class="fas fa-info-circle"></i> Как купить?</h4>
+                    <p>1. Нажмите на подарок для покупки</p>
+                    <p>2. Подтвердите покупку</p>
+                    <p>3. Купленные подарки появятся в вашем профиле</p>
+                    <p class="note">💡 Некоторые подарки требуют монеты, которые можно купить во вкладке "Пополнить"</p>
+                </div>
+            </div>
+        </main>
+        
+        <div class="notification" id="notification">
+            <span id="notificationText"></span>
+        </div>
+        
+        <!-- Модальное окно покупки -->
+        <div class="modal" id="purchaseModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Покупка подарка</h3>
+                    <button class="modal-close" id="modalClose">&times;</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Контент будет заполнен через JS -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="modalCancel">Отмена</button>
+                    <button class="btn-primary" id="modalConfirm">Купить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Навигация внизу -->
+<nav class="navbar bottom-nav">
+    <a href="index.html" class="nav-item">
+        <i class="fas fa-dice"></i>
+        <span>Слоты</span>
+    </a>
+    <a href="shop.html" class="nav-item active">
+        <i class="fas fa-shopping-bag"></i>
+        <span>Магазин</span>
+    </a>
+    <a href="wallet.html" class="nav-item">
+        <i class="fas fa-wallet"></i>
+        <span>Пополнить</span>
+    </a>
+    <a href="profile.html" class="nav-item">
+        <i class="fas fa-user"></i>
+        <span>Профиль</span>
+    </a>
+</nav>
+
+    </div>
+    
+    <script src="api.js"></script>
+    <script src="shop.js"></script>
+</body>
+</html>

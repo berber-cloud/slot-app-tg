@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - Emoji Slots</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Навигация -->
+        
+
+        <header class="header">
+            <div class="balance-container">
+                <div class="balance">
+                    <i class="fas fa-star"></i>
+                    <span id="balance">0</span>
+                </div>
+                <div class="balance coins-balance">
+                    <i class="fas fa-coins"></i>
+                    <span id="coins">0</span>
+                </div>
+            </div>
+            
+            <div class="logo">
+                <h1><span class="logo-gradient">👤 Профиль</span></h1>
+                <p class="subtitle">Ваши достижения и коллекция</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <i class="fas fa-gift"></i>
+                    <span id="totalGifts">0</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="profile-container">
+                <!-- Информация о пользователе -->
+                <div class="user-card">
+                    <div class="user-avatar" id="userAvatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="user-info">
+                        <h3 id="userName">Гость</h3>
+                        <p class="user-id" id="userId">ID: Загрузка...</p>
+                        <div class="user-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Регистрация: <span id="joinDate">Сегодня</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Статистика игры -->
+                <div class="stats-section">
+                    <h3><i class="fas fa-chart-line"></i> Статистика игры</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-sync-alt"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Всего спинов</h4>
+                                <p class="stat-value" id="totalSpins">0</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Выигрыши</h4>
+                                <p class="stat-value" id="totalWins">0</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Джекпоты</h4>
+                                <p class="stat-value" id="jackpots">0</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-details">
+                                <h4>Процент побед</h4>
+                                <p class="stat-value" id="winRate">0%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Коллекция подарков -->
+                <div class="gifts-section">
+                    <h3><i class="fas fa-box-open"></i> Ваша коллекция</h3>
+                    <div class="collection-info">
+                        <p>Куплено подарков: <span id="giftsCount">0</span> из <span id="totalAvailable">7</span></p>
+                        <progress id="collectionProgress" value="0" max="100"></progress>
+                    </div>
+                    
+                    <div class="gifts-collection" id="giftsCollection">
+                        <!-- Подарки будут загружены через JS -->
+                        <div class="empty-collection">
+                            <i class="fas fa-box-open"></i>
+                            <p>Ваша коллекция пуста</p>
+                            <p class="hint">Купите подарки в магазине!</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Достижения -->
+                <div class="achievements-section">
+                    <h3><i class="fas fa-medal"></i> Достижения</h3>
+                    <div class="achievements-grid" id="achievementsGrid">
+                        <div class="achievement locked">
+                            <div class="achievement-icon">🎰</div>
+                            <div class="achievement-info">
+                                <h4>Первый джекпот</h4>
+                                <p>Выиграйте джекпот</p>
+                            </div>
+                            <div class="achievement-status">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="achievement locked">
+                            <div class="achievement-icon">🛍️</div>
+                            <div class="achievement-info">
+                                <h4>Первый покупатель</h4>
+                                <p>Купите любой подарок</p>
+                            </div>
+                            <div class="achievement-status">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="achievement locked">
+                            <div class="achievement-icon">⭐</div>
+                            <div class="achievement-info">
+                                <h4>Звёздный игрок</h4>
+                                <p>Накопите 1000 звёзд</p>
+                            </div>
+                            <div class="achievement-status">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="notification" id="notification">
+            <span id="notificationText"></span>
+        </div>
+
+        <!-- Навигация внизу -->
+<nav class="navbar bottom-nav">
+    <a href="index.html" class="nav-item">
+        <i class="fas fa-dice"></i>
+        <span>Слоты</span>
+    </a>
+    <a href="shop.html" class="nav-item ">
+        <i class="fas fa-shopping-bag"></i>
+        <span>Магазин</span>
+    </a>
+    <a href="wallet.html" class="nav-item">
+        <i class="fas fa-wallet"></i>
+        <span>Пополнить</span>
+    </a>
+    <a href="profile.html" class="nav-item active">
+        <i class="fas fa-user"></i>
+        <span>Профиль</span>
+    </a>
+</nav>
+
+    </div>
+    
+    <script src="api.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>
