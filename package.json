@@ -5,7 +5,7 @@
   "main": "api.js",
 "scripts": {
   "build": "echo 'No build needed'"
-},  
+},    
 
   "repository": {
     "type": "git",
