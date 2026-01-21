@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "api.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+"scripts": {
+  "build": "echo 'No build needed'"
+},
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/berber-cloud/tg-slot.git"
