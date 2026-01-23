@@ -1,13 +1,9 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tg-slot",
-   // Точка входа для серверной части (обработка API Telegram)
+  "main": "worker.js", // Указываем наш новый файл
   "compatibility_date": "2026-01-23",
   "assets": {
-    "directory": "./dist", // Папка, где лежат ваши HTML/JS/CSS файлы
+    "directory": "./", // Все остальные файлы берем из корня
     "binding": "ASSETS"
-  },
-  "observability": {
-    "enabled": true
   }
 }
