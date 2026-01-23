@@ -1,4 +1,8 @@
 // app.js - С исправленной статистикой
+const SUPABASE_ANON_KEY = window.RENDER_CONFIG.SUPABASE_ANON_KEY;
+const SUPABASE_URL = window.RENDER_CONFIG.SUPABASE_URL;
+
+
 // Отладка Telegram
 if (window.Telegram && window.Telegram.WebApp) {
     console.log('=== TELEGRAM DEBUG ===');

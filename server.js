@@ -1,26 +1,33 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
-// Это "магия", которая заставляет сервер отдавать все файлы из гит-репозитория
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname));
 
-// Маршрут для главной страницы
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Функция для вставки переменных в любой HTML файл
+function sendHtmlWithConfig(req, res, fileName) {
+    const filePath = path.join(__dirname, fileName);
+    if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
 
-// Пример API-маршрута, чтобы ваш JS-файл мог получить ключи от БД безопасно
-app.get('/api/config', (req, res) => {
-    res.json({
-        dbUrl: process.env.DATABASE_URL, // Переменная с Render
-        apiKey: process.env.API_KEY      // Переменная с Render
-    });
-});
+    let html = fs.readFileSync(filePath, 'utf8');
+    
+    // Вставляем скрипт с переменными ДО всех остальных скриптов
+    const configScript = `
+    <script>
+        window.RENDER_CONFIG = {
+            SUPABASE_ANON_KEY: "${process.env.API_KEY || ''}",
+            SUPABASE_URL: "${process.env.DB_URL || ''}"
+        };
+    </script>`;
+    
+    html = html.replace('<head>', '<head>' + configScript);
+    res.send(html);
+}
 
-app.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
-});
+// Обработка главной и других страниц
+app.get('/', (req, res) => sendHtmlWithConfig(req, res, 'index.html'));
+app.get('/:page.html', (req, res) => sendHtmlWithConfig(req, res, req.params.page + '.html'));
 
+app.listen(PORT, () => console.log(`Server running`));

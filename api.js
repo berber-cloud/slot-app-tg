@@ -1,4 +1,14 @@
 // api.js - для Cloudflare Functions
+
+// Добавьте это в начало вашего js файла
+const SUPABASE_ANON_KEY = window.RENDER_CONFIG.SUPABASE_ANON_KEY;
+const SUPABASE_URL = window.RENDER_CONFIG.SUPABASE_URL;
+
+// Дальше ваш старый код без изменений
+//console.log("Ключ базы:", SUPABASE_ANON_KEY); 
+
+
+
 const API_BASE_URL = '/api';
 
 class Api {

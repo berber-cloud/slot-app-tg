@@ -1,4 +1,8 @@
 // wallet.js - с платежами Telegram Stars
+const SUPABASE_ANON_KEY = window.RENDER_CONFIG.SUPABASE_ANON_KEY;
+const SUPABASE_URL = window.RENDER_CONFIG.SUPABASE_URL;
+
+
 
 const elements = {
     balance: document.getElementById('balance'),
