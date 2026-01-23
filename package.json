@@ -1,22 +1,14 @@
 {
-  "name": "tg-slot-main",
+  "name": "tg-slot-app",
   "version": "1.0.0",
-  "description": "",
-  "main": "api.js",
-"scripts": {
-  "build": "echo 'No build needed'"
-},    
-
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/berber-cloud/tg-slot.git"
+  "description": "App with environment variables",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "npm install"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/berber-cloud/tg-slot/issues"
-  },
-  "homepage": "https://github.com/berber-cloud/tg-slot#readme"
+  "dependencies": {
+    "express": "^4.21.0",
+    "dotenv": "^16.4.0"
+  }
 }
