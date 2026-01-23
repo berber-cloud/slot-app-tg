@@ -2,15 +2,25 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
-// Порт Render предоставит автоматически
 const PORT = process.env.PORT || 3000;
 
-// Раздаем статические файлы (ваши html, css, js)
-app.use(express.static(__dirname));
+// Это "магия", которая заставляет сервер отдавать все файлы из гит-репозитория
+app.use(express.static(path.join(__dirname)));
 
-// Пример того, как вывести переменную в консоль сервера (для проверки)
-console.log("Приложение запускается с API_KEY:", process.env.YOUR_VARIABLE_NAME);
+// Маршрут для главной страницы
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Пример API-маршрута, чтобы ваш JS-файл мог получить ключи от БД безопасно
+app.get('/api/config', (req, res) => {
+    res.json({
+        dbUrl: process.env.DATABASE_URL, // Переменная с Render
+        apiKey: process.env.API_KEY      // Переменная с Render
+    });
+});
 
 app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
+    console.log(`Server started on port ${PORT}`);
 });
+
