@@ -1,3 +1,6 @@
+const SUPABASE_ANON_KEY = sb_publishable_M6Sm5HGOD7VoUpp2RE3dDw_omJAo4Lw;
+const SUPABASE_URL = 'https://xxpejmpenonubelocxjs.supabase.co';
+
 // profile.js - Исправленная версия
 const elements = {
     balance: document.getElementById('balance'),

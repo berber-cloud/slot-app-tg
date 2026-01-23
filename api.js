@@ -1,4 +1,16 @@
 // api.js - для Cloudflare Functions
+
+
+
+// Добавьте это в начало вашего js файла
+const SUPABASE_ANON_KEY = sb_publishable_M6Sm5HGOD7VoUpp2RE3dDw_omJAo4Lw;
+const SUPABASE_URL = 'https://xxpejmpenonubelocxjs.supabase.co';
+// Дальше ваш старый код без изменений
+//console.log("Ключ базы:", SUPABASE_ANON_KEY); 
+
+
+
+
 const API_BASE_URL = '/api';
 
 class Api {

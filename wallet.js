@@ -1,5 +1,12 @@
 // wallet.js - с платежами Telegram Stars
 
+const SUPABASE_ANON_KEY = sb_publishable_M6Sm5HGOD7VoUpp2RE3dDw_omJAo4Lw;
+const SUPABASE_URL = 'https://xxpejmpenonubelocxjs.supabase.co';
+
+
+
+
+
 const elements = {
     balance: document.getElementById('balance'),
     coins: document.getElementById('coins'),

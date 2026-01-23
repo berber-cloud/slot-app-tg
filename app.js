@@ -1,4 +1,7 @@
 // app.js - С исправленной статистикой
+const SUPABASE_ANON_KEY = sb_publishable_M6Sm5HGOD7VoUpp2RE3dDw_omJAo4Lw;
+const SUPABASE_URL = 'https://xxpejmpenonubelocxjs.supabase.co';
+
 // Отладка Telegram
 if (window.Telegram && window.Telegram.WebApp) {
     console.log('=== TELEGRAM DEBUG ===');
