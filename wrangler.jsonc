@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tg-slot",
+  "main": "worker.js",
+  "compatibility_date": "2026-01-23",
+
+  // Настройки мониторинга и логов
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true
+    }
+  },
+
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+}
