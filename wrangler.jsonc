@@ -1,9 +1,0 @@
-{
-  "name": "tg-slot",
-  "main": "worker.js", // Указываем наш новый файл
-  "compatibility_date": "2026-01-23",
-  "assets": {
-    "directory": "./dist", // Все остальные файлы берем из корня
-    "binding": "ASSETS"
-  }
-}
