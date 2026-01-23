@@ -1,18 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tg-slot",
-  "main": "worker.js",
+  "main": "api.js", // Точка входа для серверной части (обработка API Telegram)
   "compatibility_date": "2026-01-23",
-
-  // Настройки мониторинга и логов
-  "observability": {
-    "logs": {
-      "enabled": false,
-      "invocation_logs": true
-    }
+  "assets": {
+    "directory": "./dist", // Папка, где лежат ваши HTML/JS/CSS файлы
+    "binding": "ASSETS"
   },
-
-  "vars": {
-    "ENVIRONMENT": "production"
+  "observability": {
+    "enabled": true
   }
 }
